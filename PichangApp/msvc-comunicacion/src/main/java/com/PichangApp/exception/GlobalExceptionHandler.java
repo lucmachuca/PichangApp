@@ -30,4 +30,18 @@ public class GlobalExceptionHandler {
                 "mensaje", ex.getMessage()
         ));
     }
+
+    /**
+     * Maneja casos en los que una entidad solicitada no se encuentra.
+     * Devuelve un código 404 y un cuerpo JSON estructurado.
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "timestamp", LocalDateTime.now(),
+                "estado", 404,
+                "error", "Not Found",
+                "mensaje", ex.getMessage()
+        ));
+    }
 }

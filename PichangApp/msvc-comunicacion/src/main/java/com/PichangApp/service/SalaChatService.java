@@ -30,7 +30,7 @@ public class SalaChatService {
      */
     @Transactional
     public SalaChatResponse crearSala(CrearSalaRequest request) {
-        salaChatRepository.findBySocialMatchId(request.matchSocialId())
+        salaChatRepository.findByMatchSocialId(request.matchSocialId())
                 .ifPresent(existing -> {
                     throw new IllegalStateException(
                             "SalaChat already exists for SocialMatch: " + request.matchSocialId()
