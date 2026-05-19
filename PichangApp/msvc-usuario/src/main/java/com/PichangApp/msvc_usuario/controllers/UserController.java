@@ -1,6 +1,7 @@
 package com.PichangApp.msvc.usuario.controllers;
 
 import com.PichangApp.msvc.usuario.assemblers.UserModelAssembler;
+import com.PichangApp.msvc.usuario.models.dtos.UserResponseDTO;
 import com.PichangApp.msvc.usuario.models.entities.User;
 import com.PichangApp.msvc.usuario.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,13 +42,13 @@ public class UserController {
     @Operation(summary = "Obtiene todos los usuarios del sistema")
     @ApiResponse(responseCode = "200", description = "Usuarios listados exitosamente")
     @GetMapping
-    public ResponseEntity<CollectionModel<EntityModel<User>>> findAll() {
-        List<EntityModel<User>> entityModels = this.userService.findAll()
+    public ResponseEntity<CollectionModel<EntityModel<UserResponseDTO>>> findAll() {
+        List<EntityModel<UserResponseDTO>> entityModels = this.userService.findAll()
                 .stream()
                 .map(userModelAssembler::toModel)
                 .toList();
 
-        CollectionModel<EntityModel<User>> collectionModel = CollectionModel.of(
+        CollectionModel<EntityModel<UserResponseDTO>> collectionModel = CollectionModel.of(
                 entityModels,
                 linkTo(methodOn(UserController.class).findAll()).withSelfRel()
         );
@@ -59,7 +60,7 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Usuario encontrado exitosamente")
     @ApiResponse(responseCode = "404", description = "Usuario no existe")
     @GetMapping("/{id}")
-    public ResponseEntity<EntityModel<User>> findById(@PathVariable Long id) {
+    public ResponseEntity<EntityModel<UserResponseDTO>> findById(@PathVariable Long id) {
         Optional<User> user = userService.findById(id);
 
         return user.map(value -> ResponseEntity.ok(userModelAssembler.toModel(value)))
@@ -70,9 +71,9 @@ public class UserController {
     @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente")
     @ApiResponse(responseCode = "400", description = "Datos inválidos o falta de atributos deportivos")
     @PostMapping
-    public ResponseEntity<EntityModel<User>> create(@Valid @RequestBody User user) {
+    public ResponseEntity<EntityModel<UserResponseDTO>> create(@Valid @RequestBody User user) {
         User newUser = this.userService.save(user);
-        EntityModel<User> entityModel = this.userModelAssembler.toModel(newUser);
+        EntityModel<UserResponseDTO> entityModel = this.userModelAssembler.toModel(newUser);
 
         return ResponseEntity
                 .created(linkTo(methodOn(UserController.class).findById(newUser.getId())).toUri())
@@ -87,9 +88,6 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==========================================
-    // ENDPOINT DE DICCIONARIO PARA EL FRONTEND
-    // ==========================================
     @Operation(summary = "Obtiene la configuración de campos requeridos según el deporte")
     @ApiResponse(responseCode = "200", description = "Configuración devuelta con éxito")
     @GetMapping("/profiles/config/{deporte}")
