@@ -1,13 +1,13 @@
-package com.PichangApp.msvc_comunicacion;
+package com.PichangApp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MsvcComunicacionApplication {
+public class ComunicacionServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MsvcComunicacionApplication.class, args);
+		SpringApplication.run(ComunicacionServiceApplication.class, args);
 	}
 
 }
