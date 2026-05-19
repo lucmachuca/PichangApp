@@ -1,4 +1,4 @@
-package com.PichangApp.msvc.usuario.security;
+package com.PichangApp.msvc_usuario.security;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

@@ -1,7 +1,8 @@
-package com.PichangApp.msvc.usuario.config;
+package com.PichangApp.msvc_usuario.config;
 
-import com.PichangApp.msvc.usuario.security.filter.JwtAuthenticationFilter;
-import com.PichangApp.msvc.usuario.security.filter.JwtValidationFilter;
+import com.PichangApp.msvc_usuario.security.filter.JwtAuthenticationFilter;
+import com.PichangApp.msvc_usuario.security.filter.JwtValidationFilter;
+import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +29,6 @@ public class SecurityConfig {
     @Autowired
     private AuthenticationConfiguration authenticationConfiguration;
 
-    // Extraemos el AuthenticationManager para pasárselo a nuestros filtros
     @Bean
     public AuthenticationManager authenticationManager() throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
@@ -41,22 +41,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(authenticationManager());
+        jwtAuthenticationFilter.setFilterProcessesUrl("/login");
+
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                        // Rutas públicas (Registro, Diccionarios y Swagger)
-                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users", "/api/users/", "/api/users/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/login", "/login/").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/profiles/config/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-
-                        // Todo lo demás está bloqueado y requiere token
                         .anyRequest().authenticated()
                 )
-                // Inyectamos a nuestros Guardianes JWT en la cadena de filtros
-                .addFilter(new JwtAuthenticationFilter(authenticationManager()))
+                .addFilter(jwtAuthenticationFilter)
                 .addFilter(new JwtValidationFilter(authenticationManager()))
-                // Forzamos que la API no guarde sesiones (Stateless)
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
     }
@@ -67,6 +69,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

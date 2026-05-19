@@ -1,4 +1,4 @@
-package com.PichangApp.msvc.usuario.security;
+package com.PichangApp.msvc_usuario.security;
 
 import io.jsonwebtoken.security.Keys;
 import javax.crypto.SecretKey;
