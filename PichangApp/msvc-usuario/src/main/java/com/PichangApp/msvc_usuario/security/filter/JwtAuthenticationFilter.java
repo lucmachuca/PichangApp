@@ -1,9 +1,6 @@
-package com.PichangApp.msvc.usuario.security.filter;
+package com.PichangApp.msvc_usuario.security.filter;
 
-import com.PichangApp.msvc.usuario.models.entities.User;
-import com.PichangApp.msvc.usuario.security.TokenJwtConfig;
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
+import com.PichangApp.msvc_usuario.security.TokenJwtConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -19,8 +16,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,18 +31,19 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
-        User user = null;
+        // Parse the incoming JSON into a simple AuthRequest rather than the full
+        // User entity.  This avoids unexpected validation failures when only
+        // username and password are provided in the login request and prevents
+        // serialization issues if the User structure changes.
         String username = null;
         String password = null;
-
         try {
-            user = new ObjectMapper().readValue(request.getInputStream(), User.class);
-            username = user.getUsername();
-            password = user.getPassword();
-        } catch (StreamReadException | DatabindException e) {
-            e.printStackTrace();
+            com.PichangApp.msvc_usuario.models.dtos.AuthRequest authRequest = new ObjectMapper().readValue(request.getInputStream(), com.PichangApp.msvc_usuario.models.dtos.AuthRequest.class);
+            username = authRequest.getUsername();
+            password = authRequest.getPassword();
         } catch (IOException e) {
-            e.printStackTrace();
+            // If the body cannot be parsed, credentials will remain null and the
+            // authentication manager will throw a BadCredentialsException.
         }
 
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
@@ -56,10 +54,19 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
         org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
         String username = user.getUsername();
-        Collection<? extends GrantedAuthority> roles = authResult.getAuthorities();
+
+        // Spring Security 7 may include authorities that contain java.time.Instant
+        // values (for example FactorGrantedAuthority). Serializing the complete
+        // objects caused a 500 error during /login because Jackson needed extra
+        // Java Time modules.  For a JWT we only need the authority names, so the
+        // token now stores a clean List<String> such as ["ROLE_USER"].
+        List<String> roles = authResult.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
 
         Claims claims = Jwts.claims()
-                .add("authorities", new ObjectMapper().writeValueAsString(roles))
+                .add("authorities", roles)
                 .add("username", username)
                 .build();
 
