@@ -1,10 +1,10 @@
-package com.PichangApp.msvc.usuario.services;
+package com.PichangApp.msvc_usuario.services;
 
-import com.PichangApp.msvc.usuario.models.entities.Role;
-import com.PichangApp.msvc.usuario.models.entities.User;
-import com.PichangApp.msvc.usuario.models.entities.UserProfile;
-import com.PichangApp.msvc.usuario.repositories.RoleRepository;
-import com.PichangApp.msvc.usuario.repositories.UserRepository;
+import com.PichangApp.msvc_usuario.models.entities.Role;
+import com.PichangApp.msvc_usuario.models.entities.User;
+import com.PichangApp.msvc_usuario.models.entities.UserProfile;
+import com.PichangApp.msvc_usuario.repositories.RoleRepository;
+import com.PichangApp.msvc_usuario.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,12 +35,16 @@ public class UserServiceImpl implements UserService {
         // 1. Encriptar contraseña (mantenido de tu lógica original)
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // 2. Asignar Rol por defecto
-        Optional<Role> optionalRoleUser = roleRepository.findByName("ROLE_USER");
-        List<Role> roles = new ArrayList<>();
-        optionalRoleUser.ifPresent(roles::add);
+        // 2. Asignar Rol por defecto. Si no existe, se crea automáticamente.
+        Role roleUser = roleRepository.findByName("ROLE_USER").orElseGet(() -> {
+            Role role = new Role();
+            role.setName("ROLE_USER");
+            return roleRepository.save(role);
+        });
 
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            List<Role> roles = new ArrayList<>();
+            roles.add(roleUser);
             user.setRoles(roles);
         }
 

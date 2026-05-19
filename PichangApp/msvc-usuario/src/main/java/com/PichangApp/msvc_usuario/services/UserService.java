@@ -1,6 +1,6 @@
-package com.PichangApp.msvc.usuario.services;
+package com.PichangApp.msvc_usuario.services;
 
-import com.PichangApp.msvc.usuario.models.entities.User;
+import com.PichangApp.msvc_usuario.models.entities.User;
 import java.util.List;
 import java.util.Optional;
 
