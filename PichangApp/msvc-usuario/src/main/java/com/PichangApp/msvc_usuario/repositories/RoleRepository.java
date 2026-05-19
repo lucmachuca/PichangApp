@@ -1,6 +1,6 @@
-package com.PichangApp.msvc.usuario.repositories;
+package com.PichangApp.msvc_usuario.repositories;
 
-import com.PichangApp.msvc.usuario.models.entities.Role;
+import com.PichangApp.msvc_usuario.models.entities.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
