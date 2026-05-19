@@ -1,12 +1,9 @@
-package com.PichangApp.msvc.usuario.controllers;
+package com.PichangApp.msvc_usuario.controllers;
 
-import com.PichangApp.msvc.usuario.assemblers.UserModelAssembler;
-import com.PichangApp.msvc.usuario.models.dtos.UserResponseDTO;
-import com.PichangApp.msvc.usuario.models.entities.User;
-import com.PichangApp.msvc.usuario.services.UserService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.PichangApp.msvc_usuario.assemblers.UserModelAssembler;
+import com.PichangApp.msvc_usuario.models.dtos.UserResponseDTO;
+import com.PichangApp.msvc_usuario.models.entities.User;
+import com.PichangApp.msvc_usuario.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -27,7 +24,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping("/api/users")
 @Validated
 @CrossOrigin(origins = "*")
-@Tag(name = "Usuarios", description = "Endpoints para la gestión de usuarios, perfiles deportivos y HATEOAS")
 public class UserController {
 
     private final UserService userService;
@@ -39,8 +35,6 @@ public class UserController {
         this.userModelAssembler = userModelAssembler;
     }
 
-    @Operation(summary = "Obtiene todos los usuarios del sistema")
-    @ApiResponse(responseCode = "200", description = "Usuarios listados exitosamente")
     @GetMapping
     public ResponseEntity<CollectionModel<EntityModel<UserResponseDTO>>> findAll() {
         List<EntityModel<UserResponseDTO>> entityModels = this.userService.findAll()
@@ -56,9 +50,6 @@ public class UserController {
         return ResponseEntity.ok(collectionModel);
     }
 
-    @Operation(summary = "Obtiene un usuario por su ID")
-    @ApiResponse(responseCode = "200", description = "Usuario encontrado exitosamente")
-    @ApiResponse(responseCode = "404", description = "Usuario no existe")
     @GetMapping("/{id}")
     public ResponseEntity<EntityModel<UserResponseDTO>> findById(@PathVariable Long id) {
         Optional<User> user = userService.findById(id);
@@ -67,9 +58,6 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    @Operation(summary = "Registra un nuevo usuario y su perfil deportivo")
-    @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente")
-    @ApiResponse(responseCode = "400", description = "Datos inválidos o falta de atributos deportivos")
     @PostMapping
     public ResponseEntity<EntityModel<UserResponseDTO>> create(@Valid @RequestBody User user) {
         User newUser = this.userService.save(user);
@@ -80,16 +68,17 @@ public class UserController {
                 .body(entityModel);
     }
 
-    @Operation(summary = "Elimina un usuario por su ID")
-    @ApiResponse(responseCode = "204", description = "Usuario borrado exitosamente")
+    @PostMapping("/register")
+    public ResponseEntity<EntityModel<UserResponseDTO>> register(@Valid @RequestBody User user) {
+        return create(user);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         userService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Obtiene la configuración de campos requeridos según el deporte")
-    @ApiResponse(responseCode = "200", description = "Configuración devuelta con éxito")
     @GetMapping("/profiles/config/{deporte}")
     public ResponseEntity<Map<String, Object>> getProfileConfig(@PathVariable String deporte) {
         Map<String, Object> config;

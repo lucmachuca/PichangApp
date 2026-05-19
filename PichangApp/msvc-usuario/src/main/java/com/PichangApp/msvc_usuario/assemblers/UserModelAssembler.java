@@ -1,9 +1,9 @@
-package com.PichangApp.msvc.usuario.assemblers;
+package com.PichangApp.msvc_usuario.assemblers;
 
-import com.PichangApp.msvc.usuario.controllers.UserController;
-import com.PichangApp.msvc.usuario.models.dtos.UserProfileDTO;
-import com.PichangApp.msvc.usuario.models.dtos.UserResponseDTO;
-import com.PichangApp.msvc.usuario.models.entities.User;
+import com.PichangApp.msvc_usuario.controllers.UserController;
+import com.PichangApp.msvc_usuario.models.dtos.UserProfileDTO;
+import com.PichangApp.msvc_usuario.models.dtos.UserResponseDTO;
+import com.PichangApp.msvc_usuario.models.entities.User;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;

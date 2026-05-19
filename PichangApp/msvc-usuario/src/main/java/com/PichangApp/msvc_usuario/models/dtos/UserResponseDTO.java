@@ -1,4 +1,4 @@
-package com.PichangApp.msvc.usuario.models.dtos;
+package com.PichangApp.msvc_usuario.models.dtos;
 
 import lombok.Data;
 

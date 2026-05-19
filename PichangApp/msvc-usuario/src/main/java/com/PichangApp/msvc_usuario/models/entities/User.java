@@ -1,4 +1,4 @@
-package com.PichangApp.msvc.usuario.models.entities;
+package com.PichangApp.msvc_usuario.models.entities;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
