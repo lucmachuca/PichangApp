@@ -1,13 +1,13 @@
-package com.PichangApp.msvc_match;
+package com.PichangApp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MsvcMatchApplication {
+public class MatchServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MsvcMatchApplication.class, args);
+		SpringApplication.run(MatchServiceApplication.class, args);
 	}
 
 }
