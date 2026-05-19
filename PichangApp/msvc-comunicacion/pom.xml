@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>com.pichangapp</groupId>
-        <artifactId>PichangApp</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
+	<parent>
+		<groupId>com.pichangapp</groupId>
+		<artifactId>PichangApp</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
 	<groupId>com.PichangApp.msvc.comunicacion</groupId>
 	<artifactId>msvc-comunicacion</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
@@ -43,13 +43,77 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
+		<!--
+            Utilizamos spring‑boot‑starter‑web en lugar de spring‑boot‑starter‑webmvc para
+            incorporar las dependencias de serialización JSON (Jackson) que
+            requiere el filtro JwtValidationFilter.  El módulo "web" incluye
+            automáticamente el starter "webmvc" y "jackson" para la conversión
+            de objetos a JSON.
+        -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+
+		<!--
+            Spring Cloud LoadBalancer es necesario cuando utilizamos clientes
+            Feign por nombre de servicio (e.g. "msvc-match") sin un
+            servidor de descubrimiento como Eureka.  La ausencia de esta
+            dependencia provoca un error en tiempo de ejecución
+            ("No Feign Client for loadBalancing defined").  Al incluir
+            spring-cloud-starter-loadbalancer, Feign puede resolver el
+            nombre del servicio a una URL fija o balancear peticiones.
+        -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+		</dependency>
+
+		<!-- Dependencias para el manejo y validación de JWT mediante JJWT 0.12.x.
+		     Se requiere la API en tiempo de compilación y las implementaciones
+		     en tiempo de ejecución para poder verificar la firma de los tokens.
+		     Véase la documentación de JJWT para más detalles. -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.12.3</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.12.3</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.12.3</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!--
+			Jackson Databind es necesario para la serialización y deserialización de objetos
+			en el filtro JwtValidationFilter.  Aunque spring‑boot‑starter‑web trae
+			"jackson" de manera transitiva, se declara explícitamente para evitar
+			errores de compilación como "package com.fasterxml.jackson.databind does
+			not exist".  También se importan las anotaciones y el núcleo de Jackson
+			para soportar excepciones como StreamReadException y DatabindException.
+		-->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<dependency>
@@ -68,24 +132,11 @@
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- Dependencia de pruebas unificada.  Reemplaza los starters "-test" inexistentes
+			y proporciona herramientas de prueba para Spring, JPA y seguridad. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
