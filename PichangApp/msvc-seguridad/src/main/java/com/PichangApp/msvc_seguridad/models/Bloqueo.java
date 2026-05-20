@@ -1,25 +1,41 @@
 package com.PichangApp.msvc_seguridad.models;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import lombok.*;
 
-@Data
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "bloqueos")
+@Table(
+        name = "bloqueos",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"id_usuario_origen", "id_usuario_bloqueado"})
+        }
+)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Bloqueo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idBloqueo;
 
-    @Column(nullable = false)
-    private UUID idUsuarioOrigen; // Quien bloquea
+    @Column(name = "id_usuario_origen", nullable = false)
+    private Long idUsuarioOrigen;
 
-    @Column(nullable = false)
-    private UUID idUsuarioBloqueado; // A quien bloquearon
+    @Column(name = "id_usuario_bloqueado", nullable = false)
+    private Long idUsuarioBloqueado;
 
-    @Column(name = "fecha_bloqueo")
-    private LocalDateTime fechaBloqueo = LocalDateTime.now();
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime fechaBloqueo;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.fechaBloqueo == null) {
+            this.fechaBloqueo = LocalDateTime.now();
+        }
+    }
 }
