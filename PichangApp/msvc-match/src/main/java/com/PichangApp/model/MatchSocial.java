@@ -6,14 +6,18 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Representa una conexión social mutua entre dos usuarios (ambos interactuaron con ME_GUSTA).
- * Esto NO es un partido de fútbol, es un enlace de afinidad social que puede desencadenar
- * una sala de chat (ChatRoom) en el servicio de comunicación (Communication-Service).
- * Los IDs se normalizan: usuarioAId < usuarioBId para prevenir registros duplicados invertidos.
+ * Representa una conexión social mutua entre dos usuarios (ambos interactuaron
+ * con ME_GUSTA).
+ * Esto NO es un partido de fútbol, es un enlace de afinidad social que puede
+ * desencadenar
+ * una sala de chat (ChatRoom) en el servicio de comunicación
+ * (Communication-Service).
+ * Los IDs se normalizan: usuarioAId < usuarioBId para prevenir registros
+ * duplicados invertidos.
  */
 @Entity
 @Table(name = "matches_sociales", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"usuario_a_id", "usuario_b_id"})
+        @UniqueConstraint(columnNames = { "usuario_a_id", "usuario_b_id" })
 })
 @Getter
 @Setter

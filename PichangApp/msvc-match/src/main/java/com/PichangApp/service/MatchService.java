@@ -24,10 +24,12 @@ public class MatchService {
     private final MatchSocialRepository matchSocialRepository;
 
     /**
-     * Registra la acción de un usuario (como dar "Me Gusta" o rechazar) hacia otro usuario.
+     * Registra la acción de un usuario (como dar "Me Gusta" o rechazar) hacia otro
+     * usuario.
      * Flujo principal:
      * 1. El Usuario A le da "Me Gusta" al Usuario B.
-     * 2. El sistema revisa si el Usuario B ya le había dado "Me Gusta" al Usuario A antes.
+     * 2. El sistema revisa si el Usuario B ya le había dado "Me Gusta" al Usuario A
+     * antes.
      * 3. Si ambos se dieron "Me Gusta", ¡tenemos un Match (conexión exitosa)!
      */
     @Transactional
@@ -37,8 +39,10 @@ public class MatchService {
             throw new IllegalArgumentException("Un usuario no puede interactuar consigo mismo.");
         }
 
-        // Regla de negocio: Un usuario no puede interactuar más de una vez con la misma persona.
-        if (interaccionRepository.existsByUsuarioOrigenIdAndUsuarioDestinoId(request.usuarioOrigenId(), request.usuarioDestinoId())) {
+        // Regla de negocio: Un usuario no puede interactuar más de una vez con la misma
+        // persona.
+        if (interaccionRepository.existsByUsuarioOrigenIdAndUsuarioDestinoId(request.usuarioOrigenId(),
+                request.usuarioDestinoId())) {
             throw new IllegalStateException("El usuario ya ha interactuado con esta persona.");
         }
 
@@ -53,7 +57,8 @@ public class MatchService {
 
         boolean hayMatch = false;
 
-        // Si la interacción es un "Me Gusta", verificamos si la otra persona también nos dio "Me Gusta".
+        // Si la interacción es un "Me Gusta", verificamos si la otra persona también
+        // nos dio "Me Gusta".
         if (request.tipo() == TipoInteraccion.ME_GUSTA) {
             hayMatch = checkAndCreateMatch(request.usuarioOrigenId(), request.usuarioDestinoId());
         }
@@ -65,25 +70,26 @@ public class MatchService {
                 interaccion.getUsuarioDestinoId(),
                 interaccion.getTipo(),
                 hayMatch,
-                interaccion.getFechaCreacion()
-        );
+                interaccion.getFechaCreacion());
     }
 
     /**
-     * Verifica si la persona que recibió el "Me Gusta" ya nos había dado un "Me Gusta" previamente.
+     * Verifica si la persona que recibió el "Me Gusta" ya nos había dado un "Me
+     * Gusta" previamente.
      * Si es así, crea la conexión oficial (MatchSocial).
      */
     private boolean checkAndCreateMatch(Long usuarioOrigenId, Long usuarioDestinoId) {
         // Buscamos si existe un "Me Gusta" recíproco (del Destino hacia el Origen).
         var reciprocal = interaccionRepository.findByUsuarioOrigenIdAndUsuarioDestinoIdAndTipo(
-                usuarioDestinoId, usuarioOrigenId, TipoInteraccion.ME_GUSTA
-        );
+                usuarioDestinoId, usuarioOrigenId, TipoInteraccion.ME_GUSTA);
 
         if (reciprocal.isPresent()) {
-            // Verificamos que no exista ya un Match entre estas dos personas para no duplicarlo.
+            // Verificamos que no exista ya un Match entre estas dos personas para no
+            // duplicarlo.
             var existing = matchSocialRepository.findByUsers(usuarioOrigenId, usuarioDestinoId);
             if (existing.isEmpty()) {
-                // Ordenamos los IDs de menor a mayor para evitar duplicados invertidos en la base de datos
+                // Ordenamos los IDs de menor a mayor para evitar duplicados invertidos en la
+                // base de datos
                 // (ej. Match 1-2 es lo mismo que Match 2-1).
                 Long userA = Math.min(usuarioOrigenId, usuarioDestinoId);
                 Long userB = Math.max(usuarioOrigenId, usuarioDestinoId);
@@ -98,7 +104,8 @@ public class MatchService {
                 matchSocialRepository.save(match);
                 log.info("¡Match creado exitosamente entre el Usuario {} y el Usuario {}!", userA, userB);
 
-                // PRÓXIMO PASO (TODO): Avisar al sistema de chats para que les abra una conversación.
+                // PRÓXIMO PASO (TODO): Avisar al sistema de chats para que les abra una
+                // conversación.
                 // Esto se hará de forma asíncrona para no retrasar la respuesta al usuario.
                 return true;
             }
@@ -108,27 +115,27 @@ public class MatchService {
     }
 
     /**
-     * Obtiene la lista de todas las conexiones (Matches) activas de un usuario en particular.
+     * Obtiene la lista de todas las conexiones (Matches) activas de un usuario en
+     * particular.
      */
     public List<MatchSocialResponse> obtenerMatchesPorUsuario(Long userId) {
         return matchSocialRepository.findActiveMatchesByUserId(userId)
                 .stream()
                 .map(m -> new MatchSocialResponse(
                         m.getId(), m.getUsuarioAId(), m.getUsuarioBId(),
-                        m.getActivo(), m.getFechaCreacion()
-                ))
+                        m.getActivo(), m.getFechaCreacion()))
                 .toList();
     }
 
     /**
-     * Busca los detalles de un Match específico usando su número identificador (ID).
+     * Busca los detalles de un Match específico usando su número identificador
+     * (ID).
      */
     public MatchSocialResponse obtenerMatchPorId(Long matchId) {
         var match = matchSocialRepository.findById(matchId)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontró el Match con el ID: " + matchId));
         return new MatchSocialResponse(
                 match.getId(), match.getUsuarioAId(), match.getUsuarioBId(),
-                match.getActivo(), match.getFechaCreacion()
-        );
+                match.getActivo(), match.getFechaCreacion());
     }
 }

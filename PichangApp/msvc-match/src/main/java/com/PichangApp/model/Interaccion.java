@@ -7,12 +7,14 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Representa una única interacción direccional (ME_GUSTA o DISME_GUSTA) de un usuario hacia otro.
- * Una restricción única (unique constraint) previene interacciones duplicadas hacia el mismo destino.
+ * Representa una única interacción direccional (ME_GUSTA o DISME_GUSTA) de un
+ * usuario hacia otro.
+ * Una restricción única (unique constraint) previene interacciones duplicadas
+ * hacia el mismo destino.
  */
 @Entity
 @Table(name = "interacciones", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"usuario_origen_id", "usuario_destino_id"})
+        @UniqueConstraint(columnNames = { "usuario_origen_id", "usuario_destino_id" })
 })
 @Getter
 @Setter

@@ -8,7 +8,8 @@ import java.util.Optional;
 
 public interface InteraccionRepository extends JpaRepository<Interaccion, Long> {
 
-    Optional<Interaccion> findByUsuarioOrigenIdAndUsuarioDestinoIdAndTipo(Long usuarioOrigenId, Long usuarioDestinoId, TipoInteraccion tipo);
+    Optional<Interaccion> findByUsuarioOrigenIdAndUsuarioDestinoIdAndTipo(Long usuarioOrigenId, Long usuarioDestinoId,
+            TipoInteraccion tipo);
 
     boolean existsByUsuarioOrigenIdAndUsuarioDestinoId(Long usuarioOrigenId, Long usuarioDestinoId);
 }

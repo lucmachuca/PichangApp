@@ -17,8 +17,7 @@ public class GlobalExceptionHandler {
                 "timestamp", LocalDateTime.now(),
                 "status", 400,
                 "error", "Bad Request",
-                "message", ex.getMessage()
-        ));
+                "message", ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)
@@ -27,7 +26,6 @@ public class GlobalExceptionHandler {
                 "timestamp", LocalDateTime.now(),
                 "status", 409,
                 "error", "Conflict",
-                "message", ex.getMessage()
-        ));
+                "message", ex.getMessage()));
     }
 }
