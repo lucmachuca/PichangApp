@@ -1,28 +1,49 @@
 package com.PichangApp.msvc_seguridad.controllers;
 
+import com.PichangApp.msvc_seguridad.dtos.BloqueoRequest;
+import com.PichangApp.msvc_seguridad.dtos.BloqueoResponse;
+import com.PichangApp.msvc_seguridad.dtos.ReporteRequest;
+import com.PichangApp.msvc_seguridad.dtos.ReporteResponse;
+import com.PichangApp.msvc_seguridad.services.SeguridadSafetyService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/safety")
 public class SeguridadSafetyController {
 
-    // Simula recibir un reporte desde la app móvil
-    @PostMapping("/reportar")
-    public String reportarUsuario() {
-        // A futuro aquí tomaremos los datos y los guardaremos en la base de datos
-        return "Reporte recibido. Nuestro equipo de moderación revisará la conducta del deportista.";
+    private final SeguridadSafetyService seguridadSafetyService;
+
+    public SeguridadSafetyController(SeguridadSafetyService seguridadSafetyService) {
+        this.seguridadSafetyService = seguridadSafetyService;
     }
 
-    // Simula bloquear a alguien
-    @PostMapping("/bloquear")
-    public String bloquearUsuario() {
-        // A futuro guardaremos el bloqueo en la tabla
-        return "Usuario bloqueado exitosamente. Ya no podrá ver tu Athlete Card ni enviarte mensajes.";
-    }
-
-    // Un endpoint simple para que pruebes que el servicio está vivo desde el navegador
     @GetMapping("/estado")
-    public String estadoServicio() {
-        return "Servicio de Safety activo: Gestionando modo seguro, reportes y bloqueos.";
+    public ResponseEntity<String> estadoServicio() {
+        return ResponseEntity.ok("Servicio de Safety activo: Gestionando modo seguro, reportes y bloqueos.");
+    }
+
+    @PostMapping("/reportar")
+    public ResponseEntity<ReporteResponse> reportarUsuario(@Valid @RequestBody ReporteRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(seguridadSafetyService.reportarUsuario(request));
+    }
+
+    @PostMapping("/bloquear")
+    public ResponseEntity<BloqueoResponse> bloquearUsuario(@Valid @RequestBody BloqueoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(seguridadSafetyService.bloquearUsuario(request));
+    }
+
+    @GetMapping("/reportes")
+    public ResponseEntity<List<ReporteResponse>> listarReportes() {
+        return ResponseEntity.ok(seguridadSafetyService.listarReportes());
+    }
+
+    @GetMapping("/bloqueos/user/{idUsuario}")
+    public ResponseEntity<List<BloqueoResponse>> listarBloqueosPorUsuario(@PathVariable Long idUsuario) {
+        return ResponseEntity.ok(seguridadSafetyService.listarBloqueosPorUsuario(idUsuario));
     }
 }
