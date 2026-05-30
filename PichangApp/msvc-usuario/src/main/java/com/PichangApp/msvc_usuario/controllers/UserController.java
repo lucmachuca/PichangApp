@@ -5,7 +5,6 @@ import com.PichangApp.msvc_usuario.models.dtos.UserResponseDTO;
 import com.PichangApp.msvc_usuario.models.entities.User;
 import com.PichangApp.msvc_usuario.services.UserService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
@@ -29,7 +28,6 @@ public class UserController {
     private final UserService userService;
     private final UserModelAssembler userModelAssembler;
 
-    @Autowired
     public UserController(UserService userService, UserModelAssembler userModelAssembler) {
         this.userService = userService;
         this.userModelAssembler = userModelAssembler;
@@ -84,26 +82,23 @@ public class UserController {
         Map<String, Object> config;
 
         switch (deporte.toUpperCase()) {
-            case "BASKET":
-                config = Map.of(
-                        "deporte", "BASKET",
-                        "campos_requeridos", List.of(
-                                Map.of("nombre", "altura", "tipo", "number", "unidad", "cm"),
-                                Map.of("nombre", "posicion", "tipo", "string", "opciones", List.of("Base", "Escolta", "Alero", "Ala-Pívot", "Pívot"))
-                        )
-                );
-                break;
-            case "BOXEO":
-                config = Map.of(
-                        "deporte", "BOXEO",
-                        "campos_requeridos", List.of(
-                                Map.of("nombre", "peso", "tipo", "number", "unidad", "kg"),
-                                Map.of("nombre", "guardia", "tipo", "string", "opciones", List.of("Ortodoxa", "Zurda"))
-                        )
-                );
-                break;
-            default:
+            case "BASKET" -> config = Map.of(
+                    "deporte", "BASKET",
+                    "campos_requeridos", List.of(
+                            Map.of("nombre", "altura", "tipo", "number", "unidad", "cm"),
+                            Map.of("nombre", "posicion", "tipo", "string", "opciones", List.of("Base", "Escolta", "Alero", "Ala-Pívot", "Pívot"))
+                    )
+            );
+            case "BOXEO" -> config = Map.of(
+                    "deporte", "BOXEO",
+                    "campos_requeridos", List.of(
+                            Map.of("nombre", "peso", "tipo", "number", "unidad", "kg"),
+                            Map.of("nombre", "guardia", "tipo", "string", "opciones", List.of("Ortodoxa", "Zurda"))
+                    )
+            );
+            default -> {
                 return ResponseEntity.badRequest().body(Map.of("error", "Deporte no soportado"));
+            }
         }
 
         return ResponseEntity.ok(config);

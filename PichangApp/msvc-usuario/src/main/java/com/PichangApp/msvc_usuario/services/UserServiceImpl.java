@@ -5,7 +5,6 @@ import com.PichangApp.msvc_usuario.models.entities.User;
 import com.PichangApp.msvc_usuario.models.entities.UserProfile;
 import com.PichangApp.msvc_usuario.repositories.RoleRepository;
 import com.PichangApp.msvc_usuario.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +21,6 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Autowired
     public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -69,18 +67,17 @@ public class UserServiceImpl implements UserService {
         }
 
         switch (profile.getDeportePrincipal().toUpperCase()) {
-            case "BASKET":
+            case "BASKET" -> {
                 if (!atributos.containsKey("altura") || !atributos.containsKey("posicion")) {
                     throw new IllegalArgumentException("Para Basket, la altura y posición son obligatorias.");
                 }
-                break;
-            case "BOXEO":
+            }
+            case "BOXEO" -> {
                 if (!atributos.containsKey("peso") || !atributos.containsKey("guardia")) {
                     throw new IllegalArgumentException("Para Boxeo, el peso y la guardia son obligatorios.");
                 }
-                break;
-            default:
-                throw new IllegalArgumentException("Deporte no soportado: " + profile.getDeportePrincipal());
+            }
+            default -> throw new IllegalArgumentException("Deporte no soportado: " + profile.getDeportePrincipal());
         }
     }
 
