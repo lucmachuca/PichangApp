@@ -1,10 +1,8 @@
 package com.PichangApp.dto;
 
-import com.PichangApp.model.enums.EstadoSala;
-import org.springframework.stereotype.Service;
-
-
 import java.time.LocalDateTime;
+
+import com.PichangApp.model.enums.EstadoSala;
 
 public record SalaChatResponse(
         Long id,
