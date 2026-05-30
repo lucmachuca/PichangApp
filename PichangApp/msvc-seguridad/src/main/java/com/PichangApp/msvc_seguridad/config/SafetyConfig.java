@@ -17,6 +17,7 @@ public class SafetyConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Dejamos pasar todas las peticiones que vayan a /api/safety/ para poder probarlas
                         .requestMatchers("/api/safety/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 );
 

@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Permitimos el acceso al endpoint de salud si existiera
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         // Todo lo demás requiere estar autenticado mediante JWT
                         .anyRequest().authenticated()
                 )
