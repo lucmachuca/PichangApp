@@ -12,6 +12,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.amqp.AmqpException;
+import com.PichangApp.dto.MatchCreatedEvent;
 
 import java.util.List;
 
@@ -22,6 +28,8 @@ public class MatchService {
 
     private final InteraccionRepository interaccionRepository;
     private final MatchSocialRepository matchSocialRepository;
+    private final RabbitTemplate rabbitTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Registra la acción de un usuario (como dar "Me Gusta" o rechazar) hacia otro
@@ -104,9 +112,10 @@ public class MatchService {
                 matchSocialRepository.save(match);
                 log.info("¡Match creado exitosamente entre el Usuario {} y el Usuario {}!", userA, userB);
 
-                // PRÓXIMO PASO (TODO): Avisar al sistema de chats para que les abra una
-                // conversación.
-                // Esto se hará de forma asíncrona para no retrasar la respuesta al usuario.
+                MatchCreatedEvent event = new MatchCreatedEvent(match.getId(), userA, userB);
+                eventPublisher.publishEvent(event);
+                log.info("MatchCreatedEvent registrado localmente para envío diferido (matchId: {})", match.getId());
+
                 return true;
             }
         }
@@ -137,5 +146,21 @@ public class MatchService {
         return new MatchSocialResponse(
                 match.getId(), match.getUsuarioAId(), match.getUsuarioBId(),
                 match.getActivo(), match.getFechaCreacion());
+    }
+
+    /**
+     * Este listener se dispara de forma automática ÚNICAMENTE DESPUÉS de que la 
+     * transacción de base de datos se haya commiteado (guardado) con éxito.
+     * Así evitamos que un fallo en RabbitMQ provoque un Rollback en PostgreSQL.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleMatchCreated(MatchCreatedEvent event) {
+        try {
+            rabbitTemplate.convertAndSend("match.exchange", "match.created", event);
+            log.info("MatchCreatedEvent enviado con éxito a RabbitMQ para matchId: {}", event.matchId());
+        } catch (AmqpException e) {
+            log.error("Error al enviar evento a RabbitMQ para matchId: {}. Motivo: {}", event.matchId(), e.getMessage());
+            // En un sistema avanzado, aquí podríamos guardar el evento en una tabla "outbox" para reintentar luego.
+        }
     }
 }
