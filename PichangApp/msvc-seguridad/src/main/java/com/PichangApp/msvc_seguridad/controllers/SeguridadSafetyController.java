@@ -46,4 +46,14 @@ public class SeguridadSafetyController {
     public ResponseEntity<List<BloqueoResponse>> listarBloqueosPorUsuario(@PathVariable Long idUsuario) {
         return ResponseEntity.ok(seguridadSafetyService.listarBloqueosPorUsuario(idUsuario));
     }
+
+    @GetMapping("/bloqueos/existe-entre")
+    public ResponseEntity<Boolean> existeBloqueoEntreUsuarios(
+            @RequestParam Long usuarioAId,
+            @RequestParam Long usuarioBId
+    ) {
+        return ResponseEntity.ok(
+                seguridadSafetyService.existeBloqueoEntreUsuarios(usuarioAId, usuarioBId)
+        );
+    }
 }
