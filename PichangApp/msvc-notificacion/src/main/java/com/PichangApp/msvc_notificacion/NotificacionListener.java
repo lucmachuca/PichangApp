@@ -1,6 +1,6 @@
 package com.PichangApp.msvc_notificacion;
 
-import org.springframework.amqp.rabbit.annotation.Queue;
+import com.PichangApp.dto.MatchCreatedEvent;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
@@ -9,26 +9,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class NotificacionListener {
 
-    // 1. Inyectamos Feign para la consulta SÍNCRONA
     private final UsuarioFeignClient usuarioFeignClient;
 
-    // 2. Escuchamos ASÍNCRONAMENTE el evento de RabbitMQ
-    // queuesToDeclare crea la cola automáticamente sin necesidad de archivos de configuración extra.
-    @RabbitListener(queuesToDeclare = @Queue("queue_notificaciones_match"))
-    public void recibirEventoMatch(MatchEventDto evento) {
-        
-        System.out.println("✅ [RabbitMQ] Evento asíncrono recibido: Match creado entre " + evento.usuarioAId() + " y " + evento.usuarioBId());
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_NOTIFICACIONES_MATCH)
+    public void recibirEventoMatch(MatchCreatedEvent evento) {
+
+        System.out.println("✅ [RabbitMQ] Evento recibido: Match creado entre "
+                + evento.usuarioAId() + " y " + evento.usuarioBId());
 
         try {
-            // 3. Usamos Feign para consultar datos SÍNCRONOS en tiempo real
             var usuario = usuarioFeignClient.obtenerUsuarioBasico(evento.usuarioAId());
-            System.out.println("✅ [Feign] Consulta síncrona exitosa. Enviando email a: " + usuario.email());
-            
+            System.out.println("✅ [Feign] Usuario consultado: " + usuario);
         } catch (Exception e) {
-            System.err.println("⚠️ [Feign] Error al consultar usuario (¿msvc-usuario está apagado?): " + e.getMessage());
+            System.err.println("⚠️ [Feign] Error al consultar usuario: " + e.getMessage());
         }
     }
-
-    // Record interno ultra-minimalista para el evento RabbitMQ
-    public record MatchEventDto(Long matchId, Long usuarioAId, Long usuarioBId) {}
 }

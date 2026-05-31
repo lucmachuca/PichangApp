@@ -15,9 +15,4 @@ public class MsvcNotificacionApplication {
 		SpringApplication.run(MsvcNotificacionApplication.class, args);
 	}
 
-	// Permite leer mensajes JSON en RabbitMQ sin archivos extra de configuración
-	@Bean
-	public MessageConverter jsonMessageConverter() {
-		return new JacksonJsonMessageConverter();
-	}
 }
