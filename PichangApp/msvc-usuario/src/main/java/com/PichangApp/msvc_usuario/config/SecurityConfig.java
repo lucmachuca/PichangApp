@@ -1,9 +1,9 @@
 package com.PichangApp.msvc_usuario.config;
 
+import com.PichangApp.msvc_usuario.repositories.UserRepository;
 import com.PichangApp.msvc_usuario.security.filter.JwtAuthenticationFilter;
 import com.PichangApp.msvc_usuario.security.filter.JwtValidationFilter;
 import jakarta.servlet.DispatcherType;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -26,8 +26,16 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private AuthenticationConfiguration authenticationConfiguration;
+    private final AuthenticationConfiguration authenticationConfiguration;
+    private final UserRepository userRepository;
+
+    public SecurityConfig(
+            AuthenticationConfiguration authenticationConfiguration,
+            UserRepository userRepository
+    ) {
+        this.authenticationConfiguration = authenticationConfiguration;
+        this.userRepository = userRepository;
+    }
 
     @Bean
     public AuthenticationManager authenticationManager() throws Exception {
@@ -41,7 +49,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(authenticationManager());
+        JwtAuthenticationFilter jwtAuthenticationFilter =
+                new JwtAuthenticationFilter(authenticationManager(), userRepository);
+
         jwtAuthenticationFilter.setFilterProcessesUrl("/login");
 
         return http
@@ -50,11 +60,19 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Endpoints públicos para registro/login
                         .requestMatchers(HttpMethod.POST, "/api/users", "/api/users/", "/api/users/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/login", "/login/").permitAll()
+
+                        // Endpoint público para configurar formularios deportivos
                         .requestMatchers(HttpMethod.GET, "/api/users/profiles/config/**").permitAll()
+
+                        // Swagger y errores
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+
+                        // Todo lo demás requiere token
                         .anyRequest().authenticated()
                 )
                 .addFilter(jwtAuthenticationFilter)
@@ -66,6 +84,7 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+
         configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
@@ -73,6 +92,7 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 }

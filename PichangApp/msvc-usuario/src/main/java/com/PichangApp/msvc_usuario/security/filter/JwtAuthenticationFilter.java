@@ -1,5 +1,7 @@
 package com.PichangApp.msvc_usuario.security.filter;
 
+import com.PichangApp.msvc_usuario.models.entities.User;
+import com.PichangApp.msvc_usuario.repositories.UserRepository;
 import com.PichangApp.msvc_usuario.security.TokenJwtConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
@@ -17,49 +19,66 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
+    public JwtAuthenticationFilter(AuthenticationManager authenticationManager, UserRepository userRepository) {
         this.authenticationManager = authenticationManager;
+        this.userRepository = userRepository;
     }
 
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
-        // Parse the incoming JSON into a simple AuthRequest rather than the full
-        // User entity.  This avoids unexpected validation failures when only
-        // username and password are provided in the login request and prevents
-        // serialization issues if the User structure changes.
+    public Authentication attemptAuthentication(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws AuthenticationException {
+
         String username = null;
         String password = null;
+
         try {
-            com.PichangApp.msvc_usuario.models.dtos.AuthRequest authRequest = new ObjectMapper().readValue(request.getInputStream(), com.PichangApp.msvc_usuario.models.dtos.AuthRequest.class);
+            com.PichangApp.msvc_usuario.models.dtos.AuthRequest authRequest =
+                    new ObjectMapper().readValue(
+                            request.getInputStream(),
+                            com.PichangApp.msvc_usuario.models.dtos.AuthRequest.class
+                    );
+
             username = authRequest.getUsername();
             password = authRequest.getPassword();
+
         } catch (IOException e) {
-            // If the body cannot be parsed, credentials will remain null and the
-            // authentication manager will throw a BadCredentialsException.
+            // Si el body viene mal, username/password quedan null y Spring Security rechaza el login.
         }
 
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(username, password);
+
         return authenticationManager.authenticate(authenticationToken);
     }
 
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
-        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
-        String username = user.getUsername();
+    protected void successfulAuthentication(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain chain,
+            Authentication authResult
+    ) throws IOException, ServletException {
 
-        // Spring Security 7 may include authorities that contain java.time.Instant
-        // values (for example FactorGrantedAuthority). Serializing the complete
-        // objects caused a 500 error during /login because Jackson needed extra
-        // Java Time modules.  For a JWT we only need the authority names, so the
-        // token now stores a clean List<String> such as ["ROLE_USER"].
+        org.springframework.security.core.userdetails.User springUser =
+                (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
+
+        String username = springUser.getUsername();
+
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        Long userId = userOptional.map(User::getId).orElse(null);
+
         List<String> roles = authResult.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
@@ -68,36 +87,48 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         Claims claims = Jwts.claims()
                 .add("authorities", roles)
                 .add("username", username)
+                .add("userId", userId)
                 .build();
 
         String token = Jwts.builder()
                 .subject(username)
                 .claims(claims)
-                .expiration(new Date(System.currentTimeMillis() + 3600000)) // Expira en 1 hora
+                .expiration(new Date(System.currentTimeMillis() + 3600000))
                 .issuedAt(new Date())
                 .signWith(TokenJwtConfig.SECRET_KEY)
                 .compact();
 
-        response.addHeader(TokenJwtConfig.HEADER_AUTHORIZATION, TokenJwtConfig.PREFIX_TOKEN + token);
+        response.addHeader(
+                TokenJwtConfig.HEADER_AUTHORIZATION,
+                TokenJwtConfig.PREFIX_TOKEN + token
+        );
 
-        Map<String, String> body = new HashMap<>();
+        Map<String, Object> body = new HashMap<>();
         body.put("token", token);
         body.put("username", username);
+        body.put("userId", userId);
         body.put("message", String.format("Hola %s, ¡has iniciado sesión con éxito!", username));
 
-        response.getWriter().write(new ObjectMapper().writeValueAsString(body));
         response.setContentType(TokenJwtConfig.CONTENT_TYPE);
-        response.setStatus(200);
+        response.setCharacterEncoding("UTF-8");
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().write(new ObjectMapper().writeValueAsString(body));
     }
 
     @Override
-    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
+    protected void unsuccessfulAuthentication(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AuthenticationException failed
+    ) throws IOException, ServletException {
+
         Map<String, String> body = new HashMap<>();
         body.put("message", "Error en la autenticación: username o password incorrectos.");
         body.put("error", failed.getMessage());
 
-        response.getWriter().write(new ObjectMapper().writeValueAsString(body));
         response.setContentType(TokenJwtConfig.CONTENT_TYPE);
-        response.setStatus(401);
+        response.setCharacterEncoding("UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.getWriter().write(new ObjectMapper().writeValueAsString(body));
     }
 }
