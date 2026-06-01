@@ -19,6 +19,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.amqp.AmqpException;
 import com.PichangApp.dto.MatchCreatedEvent;
 
+
 import java.util.List;
 
 @Service
@@ -162,5 +163,13 @@ public class MatchService {
             log.error("Error al enviar evento a RabbitMQ para matchId: {}. Motivo: {}", event.matchId(), e.getMessage());
             // En un sistema avanzado, aquí podríamos guardar el evento en una tabla "outbox" para reintentar luego.
         }
+    }
+
+    public List<Long> obtenerUsuariosInteractuados(Long usuarioOrigenId) {
+        return interaccionRepository.findByUsuarioOrigenId(usuarioOrigenId)
+                .stream()
+                .map(Interaccion::getUsuarioDestinoId)
+                .distinct()
+                .toList();
     }
 }

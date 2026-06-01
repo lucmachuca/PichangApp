@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.List;
 
 import java.util.List;
 
@@ -33,4 +37,12 @@ public class InteraccionController {
     public ResponseEntity<MatchSocialResponse> getMatch(@PathVariable Long matchId) {
         return ResponseEntity.ok(matchService.obtenerMatchPorId(matchId));
     }
+
+    @GetMapping("/interacciones/usuarios-interactuados/{usuarioId}")
+    public ResponseEntity<List<Long>> obtenerUsuariosInteractuados(
+            @PathVariable Long usuarioId
+    ) {
+        return ResponseEntity.ok(matchService.obtenerUsuariosInteractuados(usuarioId));
+    }
+
 }
