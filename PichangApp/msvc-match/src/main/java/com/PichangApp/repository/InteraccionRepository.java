@@ -12,4 +12,6 @@ public interface InteraccionRepository extends JpaRepository<Interaccion, Long> 
             TipoInteraccion tipo);
 
     boolean existsByUsuarioOrigenIdAndUsuarioDestinoId(Long usuarioOrigenId, Long usuarioDestinoId);
+
+    java.util.List<Interaccion> findByUsuarioOrigenId(Long usuarioOrigenId);
 }

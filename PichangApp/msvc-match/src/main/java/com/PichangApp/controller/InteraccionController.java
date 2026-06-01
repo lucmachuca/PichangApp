@@ -24,6 +24,11 @@ public class InteraccionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(matchService.registerInteraccion(request));
     }
 
+    @GetMapping("/interacciones/user/{userId}")
+    public ResponseEntity<List<InteraccionResponse>> getInteracciones(@PathVariable Long userId) {
+        return ResponseEntity.ok(matchService.obtenerInteraccionesPorUsuario(userId));
+    }
+
     @GetMapping("/matches/user/{userId}")
     public ResponseEntity<List<MatchSocialResponse>> getMatches(@PathVariable Long userId) {
         return ResponseEntity.ok(matchService.obtenerMatchesPorUsuario(userId));

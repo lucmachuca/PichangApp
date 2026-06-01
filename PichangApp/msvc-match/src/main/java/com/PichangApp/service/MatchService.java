@@ -123,16 +123,21 @@ public class MatchService {
         return false;
     }
 
-    /**
-     * Obtiene la lista de todas las conexiones (Matches) activas de un usuario en
-     * particular.
-     */
     public List<MatchSocialResponse> obtenerMatchesPorUsuario(Long userId) {
         return matchSocialRepository.findActiveMatchesByUserId(userId)
                 .stream()
                 .map(m -> new MatchSocialResponse(
                         m.getId(), m.getUsuarioAId(), m.getUsuarioBId(),
                         m.getActivo(), m.getFechaCreacion()))
+                .toList();
+    }
+
+    public List<InteraccionResponse> obtenerInteraccionesPorUsuario(Long userId) {
+        return interaccionRepository.findByUsuarioOrigenId(userId)
+                .stream()
+                .map(i -> new InteraccionResponse(
+                        i.getId(), i.getUsuarioOrigenId(), i.getUsuarioDestinoId(),
+                        i.getTipo(), false, i.getFechaCreacion()))
                 .toList();
     }
 
