@@ -9,6 +9,7 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,6 +76,31 @@ public class UserController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         userService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> me(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return userService.findByUsername(authentication.getName())
+                .map(user -> ResponseEntity.ok(userModelAssembler.toDto(user)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
+    @GetMapping("/discover")
+    public ResponseEntity<List<UserResponseDTO>> discoverUsers(
+            @RequestParam(required = false) Long excludeId
+    ) {
+        List<UserResponseDTO> users = userService.findAll()
+                .stream()
+                .filter(User::isEnabled)
+                .filter(user -> excludeId == null || !user.getId().equals(excludeId))
+                .map(userModelAssembler::toDto)
+                .toList();
+
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/profiles/config/{deporte}")

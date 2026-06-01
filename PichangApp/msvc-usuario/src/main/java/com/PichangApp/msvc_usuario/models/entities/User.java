@@ -12,6 +12,7 @@ import java.util.List;
 @Table(name = "users")
 @Data
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,11 +47,11 @@ public class User {
     )
     private List<Role> roles;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private UserProfile profile;
+
     @PrePersist
     public void prePersist() {
         this.enabled = true;
     }
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private UserProfile profile;
 }

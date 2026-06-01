@@ -16,8 +16,17 @@ public class UserModelAssembler implements RepresentationModelAssembler<User, En
 
     @Override
     public EntityModel<UserResponseDTO> toModel(User user) {
-        // 1. Mapear datos seguros de User a DTO (La contraseña se queda atrás)
+        UserResponseDTO dto = toDto(user);
+
+        return EntityModel.of(dto,
+                linkTo(methodOn(UserController.class).findById(user.getId())).withSelfRel(),
+                linkTo(methodOn(UserController.class).findAll()).withRel("users")
+        );
+    }
+
+    public UserResponseDTO toDto(User user) {
         UserResponseDTO dto = new UserResponseDTO();
+
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
@@ -25,7 +34,6 @@ public class UserModelAssembler implements RepresentationModelAssembler<User, En
         dto.setApellido(user.getApellido());
         dto.setEnabled(user.isEnabled());
 
-        // 2. Mapear el perfil si existe
         if (user.getProfile() != null) {
             UserProfileDTO profileDTO = new UserProfileDTO();
             profileDTO.setDescripcion(user.getProfile().getDescripcion());
@@ -33,13 +41,10 @@ public class UserModelAssembler implements RepresentationModelAssembler<User, En
             profileDTO.setFotoUrl(user.getProfile().getFotoUrl());
             profileDTO.setDeportePrincipal(user.getProfile().getDeportePrincipal());
             profileDTO.setAtributosDeportivos(user.getProfile().getAtributosDeportivos());
+
             dto.setProfile(profileDTO);
         }
 
-        // 3. Ensamblar DTO seguro con enlaces HATEOAS
-        return EntityModel.of(dto,
-                linkTo(methodOn(UserController.class).findById(user.getId())).withSelfRel(),
-                linkTo(methodOn(UserController.class).findAll()).withRel("users")
-        );
+        return dto;
     }
 }
