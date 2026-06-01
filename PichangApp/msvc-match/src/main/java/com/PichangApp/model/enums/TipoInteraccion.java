@@ -8,5 +8,5 @@ package com.PichangApp.model.enums;
  */
 public enum TipoInteraccion {
     ME_GUSTA,
-    DISME_GUSTA
+    NO_ME_GUSTA
 }
