@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.PichangApp.msvc_usuario.models.dtos.UsuarioBasicoDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,19 @@ public class UserController {
         );
 
         return ResponseEntity.ok(collectionModel);
+    }
+
+    @GetMapping("/internal/{id}")
+    public ResponseEntity<UsuarioBasicoDTO> findBasicById(@PathVariable Long id) {
+        return userService.findById(id)
+                .map(user -> ResponseEntity.ok(new UsuarioBasicoDTO(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getNombre(),
+                        user.getApellido(),
+                        user.getEmail()
+                )))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @GetMapping("/{id}")
