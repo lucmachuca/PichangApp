@@ -16,6 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.PichangApp.model.enums.TipoMensaje;
 
 import java.util.List;
 
@@ -27,6 +29,7 @@ public class SalaChatService {
     private final SalaChatRepository salaChatRepository;
     private final MensajeChatRepository mensajeChatRepository;
     private final BloqueoUsuarioRepository bloqueoUsuarioRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Crea una SalaChat a partir de un SocialMatch.
@@ -100,10 +103,17 @@ public class SalaChatService {
                 .salaChat(sala)
                 .remitenteId(request.remitenteId())
                 .contenido(request.contenido())
+                .tipoMensaje(request.tipoMensaje() != null ? request.tipoMensaje() : TipoMensaje.TEXTO)
+                .mediaUrl(request.mediaUrl())
                 .build();
 
         mensaje = mensajeChatRepository.save(mensaje);
-        return toMessageResponse(mensaje);
+        
+        MensajeChatResponse response = toMessageResponse(mensaje);
+        // Broadcast en tiempo real
+        messagingTemplate.convertAndSend("/topic/sala/" + salaId, response);
+        
+        return response;
     }
 
     public List<SalaChatResponse> obtenerSalasPorUsuario(Long userId) {
@@ -147,6 +157,8 @@ public class SalaChatService {
                 msg.getSalaChat().getId(),
                 msg.getRemitenteId(),
                 msg.getContenido(),
+                msg.getTipoMensaje(),
+                msg.getMediaUrl(),
                 msg.getFechaEnvio()
         );
     }
