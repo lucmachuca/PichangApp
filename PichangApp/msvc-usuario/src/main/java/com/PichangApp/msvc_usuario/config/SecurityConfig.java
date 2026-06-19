@@ -72,6 +72,9 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
+                        //2
+                        .requestMatchers(HttpMethod.GET, "/api/users/internal/**").permitAll()
+
                         // Todo lo demás requiere token
                         .anyRequest().authenticated()
                 )
