@@ -28,6 +28,14 @@ public class MensajeChat {
     @Column(nullable = false, length = 2000)
     private String contenido;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_mensaje", nullable = false)
+    @Builder.Default
+    private com.PichangApp.model.enums.TipoMensaje tipoMensaje = com.PichangApp.model.enums.TipoMensaje.TEXTO;
+
+    @Column(name = "media_url", length = 1000)
+    private String mediaUrl;
+
     @Column(name = "fecha_envio", nullable = false, updatable = false)
     private LocalDateTime fechaEnvio;
 
