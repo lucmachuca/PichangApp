@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.PichangApp.config.RabbitMQConfig;
@@ -36,7 +35,6 @@ public class SalaChatService {
     private final SalaChatRepository salaChatRepository;
     private final MensajeChatRepository mensajeChatRepository;
     private final BloqueoUsuarioRepository bloqueoUsuarioRepository;
-    private final SimpMessagingTemplate messagingTemplate;
     private final UsuarioFeignClient usuarioFeignClient;
     private final MatchFeignClient matchFeignClient;
     private final RabbitTemplate rabbitTemplate;
@@ -121,8 +119,6 @@ public class SalaChatService {
         mensaje = mensajeChatRepository.save(mensaje);
 
         MensajeChatResponse response = toMessageResponse(mensaje);
-
-        messagingTemplate.convertAndSend("/topic/sala/" + salaId, response);
 
         MensajeCreadoEvent event = new MensajeCreadoEvent(
                 mensaje.getId(),
