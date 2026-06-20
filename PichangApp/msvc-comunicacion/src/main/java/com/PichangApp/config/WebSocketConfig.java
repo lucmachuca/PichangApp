@@ -12,15 +12,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Rutas para broadcast (/topic) y mensajes directos (/queue)
         config.enableSimpleBroker("/topic", "/queue");
-        // Prefijo para enviar mensajes desde el cliente hacia el servidor
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // El endpoint al que se conectarán los clientes (ej: SockJS o STOMP directo)
+        registry.addEndpoint("/ws-native")
+                .setAllowedOriginPatterns("*");
+
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
