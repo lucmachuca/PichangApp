@@ -56,4 +56,10 @@ public class SeguridadSafetyController {
                 seguridadSafetyService.existeBloqueoEntreUsuarios(usuarioAId, usuarioBId)
         );
     }
+
+    @PostMapping("/desbloquear")
+    public ResponseEntity<String> desbloquearUsuario(@Valid @RequestBody BloqueoRequest request) {
+        seguridadSafetyService.desbloquearUsuario(request);
+        return ResponseEntity.ok("Usuario desbloqueado exitosamente.");
+    }
 }

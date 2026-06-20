@@ -1,6 +1,7 @@
 package com.PichangApp.msvc_seguridad.services;
 
 import com.PichangApp.dto.BloqueoCreadoEvent;
+import com.PichangApp.dto.BloqueoEliminadoEvent;
 import com.PichangApp.msvc_seguridad.config.RabbitMQConfig;
 import com.PichangApp.msvc_seguridad.dtos.BloqueoRequest;
 import com.PichangApp.msvc_seguridad.dtos.BloqueoResponse;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -88,14 +90,33 @@ public class SeguridadSafetyService {
 
         eventPublisher.publishEvent(event);
 
+        return toBloqueoResponse(bloqueoGuardado);
+    }
+
+    @Transactional
+    public void desbloquearUsuario(BloqueoRequest request) {
+        if (request.idUsuarioOrigen().equals(request.idUsuarioBloqueado())) {
+            throw new IllegalArgumentException("Un usuario no puede desbloquearse a sí mismo.");
+        }
+
+        bloqueoRepository.findByIdUsuarioOrigenAndIdUsuarioBloqueado(
+                request.idUsuarioOrigen(),
+                request.idUsuarioBloqueado()
+        ).ifPresent(bloqueoRepository::delete);
+
+        BloqueoEliminadoEvent event = new BloqueoEliminadoEvent(
+                request.idUsuarioOrigen(),
+                request.idUsuarioBloqueado(),
+                LocalDateTime.now()
+        );
+
+        eventPublisher.publishEvent(event);
+
         log.info(
-                "BloqueoCreadoEvent registrado localmente para envío diferido. bloqueoId={}, origen={}, bloqueado={}",
-                event.idBloqueo(),
+                "BloqueoEliminadoEvent registrado. origen={}, bloqueado={}",
                 event.idUsuarioOrigen(),
                 event.idUsuarioBloqueado()
         );
-
-        return toBloqueoResponse(bloqueoGuardado);
     }
 
     @Transactional(readOnly = true)
@@ -137,17 +158,32 @@ public class SeguridadSafetyService {
             );
 
             log.info(
-                    "BloqueoCreadoEvent enviado con éxito a RabbitMQ. bloqueoId={}, origen={}, bloqueado={}",
+                    "BloqueoCreadoEvent enviado a RabbitMQ. bloqueoId={}, origen={}, bloqueado={}",
                     event.idBloqueo(),
                     event.idUsuarioOrigen(),
                     event.idUsuarioBloqueado()
             );
         } catch (AmqpException e) {
-            log.error(
-                    "Error al enviar BloqueoCreadoEvent a RabbitMQ. bloqueoId={}, motivo={}",
-                    event.idBloqueo(),
-                    e.getMessage()
+            log.error("Error enviando BloqueoCreadoEvent: {}", e.getMessage());
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleBloqueoEliminado(BloqueoEliminadoEvent event) {
+        try {
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE_SEGURIDAD,
+                    RabbitMQConfig.ROUTING_KEY_BLOQUEO_ELIMINADO,
+                    event
             );
+
+            log.info(
+                    "BloqueoEliminadoEvent enviado a RabbitMQ. origen={}, bloqueado={}",
+                    event.idUsuarioOrigen(),
+                    event.idUsuarioBloqueado()
+            );
+        } catch (AmqpException e) {
+            log.error("Error enviando BloqueoEliminadoEvent: {}", e.getMessage());
         }
     }
 
