@@ -30,19 +30,12 @@ public class UserProfile {
 
     private String deportePrincipal;
 
-    private Double latitud;
-
-    private Double longitud;
-
-    private String ciudad;
-
-    private String comuna;
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> atributosDeportivos = new HashMap<>();
 
-    @OneToOne(mappedBy = "profile")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
     @JsonIgnore
     private User user;
 
