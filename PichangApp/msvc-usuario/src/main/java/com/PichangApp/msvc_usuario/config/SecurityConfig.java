@@ -74,6 +74,7 @@ public class SecurityConfig {
 
                         //2
                         .requestMatchers(HttpMethod.GET, "/api/users/internal/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/*/profile").authenticated()
 
                         // Todo lo demás requiere token
                         .anyRequest().authenticated()
