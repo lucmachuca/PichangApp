@@ -22,6 +22,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.PichangApp.config.RabbitMQConfig;
+import com.PichangApp.dto.MensajeCreadoEvent;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.List;
 
@@ -36,6 +39,7 @@ public class SalaChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final UsuarioFeignClient usuarioFeignClient;
     private final MatchFeignClient matchFeignClient;
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     public SalaChatResponse crearSala(CrearSalaRequest request) {
@@ -119,6 +123,30 @@ public class SalaChatService {
         MensajeChatResponse response = toMessageResponse(mensaje);
 
         messagingTemplate.convertAndSend("/topic/sala/" + salaId, response);
+
+        MensajeCreadoEvent event = new MensajeCreadoEvent(
+                mensaje.getId(),
+                sala.getId(),
+                sala.getMatchSocialId(),
+                request.remitenteId(),
+                receptorId,
+                mensaje.getContenido(),
+                mensaje.getFechaEnvio()
+        );
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_COMUNICACION,
+                RabbitMQConfig.ROUTING_KEY_MENSAJE_CREADO,
+                event
+        );
+
+        log.info(
+                "MensajeCreadoEvent enviado a RabbitMQ. mensajeId={}, salaId={}, remitente={}, destinatario={}",
+                event.mensajeId(),
+                event.salaId(),
+                event.remitenteId(),
+                event.destinatarioId()
+        );
 
         return response;
     }
