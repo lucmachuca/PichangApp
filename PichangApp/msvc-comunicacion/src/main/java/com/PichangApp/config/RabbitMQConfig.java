@@ -19,9 +19,16 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_MATCH = "match.exchange";
     public static final String ROUTING_KEY_MATCH = "match.created";
 
-    public static final String QUEUE_BLOQUEO_CREADO = "seguridad.bloqueo.creado.queue";
     public static final String EXCHANGE_SEGURIDAD = "seguridad.exchange";
+
+    public static final String QUEUE_BLOQUEO_CREADO = "seguridad.bloqueo.creado.queue";
     public static final String ROUTING_KEY_BLOQUEO_CREADO = "seguridad.bloqueo.creado";
+
+    public static final String QUEUE_BLOQUEO_ELIMINADO = "seguridad.bloqueo.eliminado.queue";
+    public static final String ROUTING_KEY_BLOQUEO_ELIMINADO = "seguridad.bloqueo.eliminado";
+
+    public static final String EXCHANGE_COMUNICACION = "comunicacion.exchange";
+    public static final String ROUTING_KEY_MENSAJE_CREADO = "comunicacion.mensaje.creado";
 
     @Bean
     public Queue matchCreatedQueue() {
@@ -45,13 +52,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue bloqueoCreadoQueue() {
-        return new Queue(QUEUE_BLOQUEO_CREADO, true);
+    public TopicExchange seguridadExchange() {
+        return new TopicExchange(EXCHANGE_SEGURIDAD);
     }
 
     @Bean
-    public TopicExchange seguridadExchange() {
-        return new TopicExchange(EXCHANGE_SEGURIDAD);
+    public Queue bloqueoCreadoQueue() {
+        return new Queue(QUEUE_BLOQUEO_CREADO, true);
     }
 
     @Bean
@@ -63,6 +70,27 @@ public class RabbitMQConfig {
                 .bind(bloqueoCreadoQueue)
                 .to(seguridadExchange)
                 .with(ROUTING_KEY_BLOQUEO_CREADO);
+    }
+
+    @Bean
+    public Queue bloqueoEliminadoQueue() {
+        return new Queue(QUEUE_BLOQUEO_ELIMINADO, true);
+    }
+
+    @Bean
+    public Binding bloqueoEliminadoBinding(
+            @Qualifier("bloqueoEliminadoQueue") Queue bloqueoEliminadoQueue,
+            @Qualifier("seguridadExchange") TopicExchange seguridadExchange
+    ) {
+        return BindingBuilder
+                .bind(bloqueoEliminadoQueue)
+                .to(seguridadExchange)
+                .with(ROUTING_KEY_BLOQUEO_ELIMINADO);
+    }
+
+    @Bean
+    public TopicExchange comunicacionExchange() {
+        return new TopicExchange(EXCHANGE_COMUNICACION);
     }
 
     @Bean
