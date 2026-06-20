@@ -2,6 +2,7 @@ package com.PichangApp.service;
 
 import com.PichangApp.config.RabbitMQConfig;
 import com.PichangApp.dto.BloqueoCreadoEvent;
+import com.PichangApp.dto.BloqueoEliminadoEvent;
 import com.PichangApp.model.BloqueoUsuario;
 import com.PichangApp.repository.BloqueoUsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class BloqueoEventListener {
 
         if (yaExiste) {
             log.warn(
-                    "El bloqueo origen={} bloqueado={} ya existe en la cache local de comunicación. Se omite.",
+                    "El bloqueo origen={} bloqueado={} ya existe en comunicación. Se omite.",
                     event.idUsuarioOrigen(),
                     event.idUsuarioBloqueado()
             );
@@ -53,5 +54,28 @@ public class BloqueoEventListener {
                 event.idUsuarioOrigen(),
                 event.idUsuarioBloqueado()
         );
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_BLOQUEO_ELIMINADO)
+    public void handleBloqueoEliminado(BloqueoEliminadoEvent event) {
+        log.info(
+                "Procesando BloqueoEliminadoEvent: origen={}, bloqueado={}",
+                event.idUsuarioOrigen(),
+                event.idUsuarioBloqueado()
+        );
+
+        bloqueoUsuarioRepository
+                .findByIdUsuarioOrigenAndIdUsuarioBloqueado(
+                        event.idUsuarioOrigen(),
+                        event.idUsuarioBloqueado()
+                )
+                .ifPresent(bloqueo -> {
+                    bloqueoUsuarioRepository.delete(bloqueo);
+                    log.info(
+                            "Bloqueo eliminado de cache local de comunicación. origen={}, bloqueado={}",
+                            event.idUsuarioOrigen(),
+                            event.idUsuarioBloqueado()
+                    );
+                });
     }
 }
