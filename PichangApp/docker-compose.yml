@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  msvc-usuario:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: msvc-usuario
+    container_name: pichangapp-usuario
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    networks:
+      - pichangapp-network
+
+  msvc-match:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: msvc-match
+    container_name: pichangapp-match
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    networks:
+      - pichangapp-network
+
+  msvc-comunicacion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: msvc-comunicacion
+    container_name: pichangapp-comunicacion
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    networks:
+      - pichangapp-network
+
+  msvc-notificacion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: msvc-notificacion
+    container_name: pichangapp-notificacion
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+    networks:
+      - pichangapp-network
+
+  msvc-seguridad:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: msvc-seguridad
+    container_name: pichangapp-seguridad
+    ports:
+      - "8004:8004"
+    restart: unless-stopped
+    networks:
+      - pichangapp-network
+
+networks:
+  pichangapp-network:
+    driver: bridge

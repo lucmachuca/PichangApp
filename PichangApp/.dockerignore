@@ -1,0 +1,21 @@
+target/
+*/target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**
+!**/pom.xml
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+### Others ###
+*.log
