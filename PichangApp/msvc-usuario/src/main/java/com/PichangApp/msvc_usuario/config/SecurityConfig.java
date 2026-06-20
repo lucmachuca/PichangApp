@@ -74,7 +74,6 @@ public class SecurityConfig {
 
                         //2
                         .requestMatchers(HttpMethod.GET, "/api/users/internal/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/users/discover/nearby").permitAll()
 
                         // Todo lo demás requiere token
                         .anyRequest().authenticated()
