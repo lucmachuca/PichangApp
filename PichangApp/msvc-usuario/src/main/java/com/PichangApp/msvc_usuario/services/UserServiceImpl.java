@@ -21,7 +21,11 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -30,10 +34,8 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public User save(User user) {
-        // 1. Encriptar contraseña (mantenido de tu lógica original)
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // 2. Asignar Rol por defecto. Si no existe, se crea automáticamente.
         Role roleUser = roleRepository.findByName("ROLE_USER").orElseGet(() -> {
             Role role = new Role();
             role.setName("ROLE_USER");
@@ -46,22 +48,21 @@ public class UserServiceImpl implements UserService {
             user.setRoles(roles);
         }
 
-        // 3. Validar y asociar el Perfil Dinámico (Si viene incluido en el request)
         if (user.getProfile() != null) {
             validateProfile(user.getProfile());
-            user.getProfile().setUser(user); // Mantiene la relación OneToOne bidireccional
+            user.getProfile().setUser(user);
         }
 
         return userRepository.save(user);
     }
 
-    // El "Guardia" de los datos dinámicos
     private void validateProfile(UserProfile profile) {
-        if (profile.getDeportePrincipal() == null) {
+        if (profile.getDeportePrincipal() == null || profile.getDeportePrincipal().isBlank()) {
             throw new IllegalArgumentException("El deporte principal es obligatorio");
         }
 
         Map<String, Object> atributos = profile.getAtributosDeportivos();
+
         if (atributos == null) {
             throw new IllegalArgumentException("Los atributos deportivos no pueden ser nulos");
         }
@@ -77,7 +78,9 @@ public class UserServiceImpl implements UserService {
                     throw new IllegalArgumentException("Para Boxeo, el peso y la guardia son obligatorios.");
                 }
             }
-            default -> throw new IllegalArgumentException("Deporte no soportado: " + profile.getDeportePrincipal());
+            default -> throw new IllegalArgumentException(
+                    "Deporte no soportado: " + profile.getDeportePrincipal()
+            );
         }
     }
 
