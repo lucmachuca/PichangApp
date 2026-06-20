@@ -56,6 +56,46 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Override
+    @Transactional
+    public User updateProfile(Long id, UserProfile profileRequest) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con id: " + id));
+
+        UserProfile profile = user.getProfile();
+
+        if (profile == null) {
+            profile = new UserProfile();
+            profile.setUser(user);
+            user.setProfile(profile);
+        }
+
+        if (profileRequest.getDescripcion() != null) {
+            profile.setDescripcion(profileRequest.getDescripcion());
+        }
+
+        if (profileRequest.getEdad() != null) {
+            profile.setEdad(profileRequest.getEdad());
+        }
+
+        if (profileRequest.getFotoUrl() != null) {
+            profile.setFotoUrl(profileRequest.getFotoUrl());
+        }
+
+        if (profileRequest.getDeportePrincipal() != null) {
+            profile.setDeportePrincipal(profileRequest.getDeportePrincipal());
+        }
+
+        if (profileRequest.getAtributosDeportivos() != null) {
+            profile.setAtributosDeportivos(profileRequest.getAtributosDeportivos());
+        }
+
+        profile.setUser(user);
+        validateProfile(profile);
+
+        return userRepository.save(user);
+    }
+
     private void validateProfile(UserProfile profile) {
         if (profile.getDeportePrincipal() == null || profile.getDeportePrincipal().isBlank()) {
             throw new IllegalArgumentException("El deporte principal es obligatorio");

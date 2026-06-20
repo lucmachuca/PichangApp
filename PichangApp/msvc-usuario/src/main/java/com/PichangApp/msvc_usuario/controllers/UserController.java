@@ -21,6 +21,8 @@ import java.util.Optional;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+import com.PichangApp.msvc_usuario.models.entities.UserProfile;
+
 @RestController
 @RequestMapping("/api/users")
 @Validated
@@ -171,5 +173,18 @@ public class UserController {
         }
 
         return ResponseEntity.ok(config);
+    }
+
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<UserResponseDTO> updateProfile(
+            @PathVariable Long id,
+            @RequestBody UserProfile profile
+    ) {
+        try {
+            User updatedUser = userService.updateProfile(id, profile);
+            return ResponseEntity.ok(userModelAssembler.toDto(updatedUser));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
