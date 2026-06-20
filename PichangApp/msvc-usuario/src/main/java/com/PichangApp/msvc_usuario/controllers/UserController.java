@@ -143,4 +143,52 @@ public class UserController {
 
         return ResponseEntity.ok(config);
     }
+
+    @GetMapping("/discover/nearby")
+    public ResponseEntity<List<UserResponseDTO>> discoverNearbyUsers(
+            @RequestParam Long excludeId,
+            @RequestParam Double latitud,
+            @RequestParam Double longitud,
+            @RequestParam(defaultValue = "20") Double radioKm
+    ) {
+        List<UserResponseDTO> users = userService.findAll()
+                .stream()
+                .filter(User::isEnabled)
+                .filter(user -> !user.getId().equals(excludeId))
+                .filter(user -> user.getProfile() != null)
+                .filter(user -> user.getProfile().getLatitud() != null)
+                .filter(user -> user.getProfile().getLongitud() != null)
+                .filter(user -> calcularDistanciaKm(
+                        latitud,
+                        longitud,
+                        user.getProfile().getLatitud(),
+                        user.getProfile().getLongitud()
+                ) <= radioKm)
+                .map(userModelAssembler::toDto)
+                .toList();
+
+        return ResponseEntity.ok(users);
+    }
+
+    private double calcularDistanciaKm(
+            double lat1,
+            double lon1,
+            double lat2,
+            double lon2
+    ) {
+        final int radioTierraKm = 6371;
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2)
+                * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return radioTierraKm * c;
+    }
 }
