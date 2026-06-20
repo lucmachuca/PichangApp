@@ -39,6 +39,9 @@ services:
     restart: unless-stopped
     networks:
       - pichangapp-network
+    environment:
+      - MSVC_USUARIO_URL=http://pichangapp-usuario:8001
+      - MSVC_MATCH_URL=http://pichangapp-match:8081
 
   msvc-notificacion:
     build:
@@ -52,6 +55,8 @@ services:
     restart: unless-stopped
     networks:
       - pichangapp-network
+    environment:
+      - MSVC_USUARIO_URL=http://pichangapp-usuario:8001
 
   msvc-seguridad:
     build:
