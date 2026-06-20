@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Entity
-@Table(name = "users_profiles")
+@Table(name = "user_profiles")
 @Getter
 @Setter
 @NoArgsConstructor

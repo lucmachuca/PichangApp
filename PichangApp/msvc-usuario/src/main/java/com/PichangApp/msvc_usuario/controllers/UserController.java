@@ -3,6 +3,8 @@ package com.PichangApp.msvc_usuario.controllers;
 import com.PichangApp.msvc_usuario.assemblers.UserModelAssembler;
 import com.PichangApp.msvc_usuario.models.dtos.UserResponseDTO;
 import com.PichangApp.msvc_usuario.models.dtos.UsuarioBasicoDTO;
+import com.PichangApp.msvc_usuario.models.dtos.UpdateUserProfileDTO;
+import com.PichangApp.msvc_usuario.models.entities.UserProfile;
 import com.PichangApp.msvc_usuario.models.entities.User;
 import com.PichangApp.msvc_usuario.services.UserService;
 import jakarta.validation.Valid;
@@ -176,15 +178,42 @@ public class UserController {
     }
 
     @PutMapping("/{id}/profile")
-    public ResponseEntity<UserResponseDTO> updateProfile(
+    public ResponseEntity<Map<String, Object>> updateProfile(
             @PathVariable Long id,
-            @RequestBody UserProfile profile
-    ) {
+            @RequestBody UpdateUserProfileDTO updateProfileDTO,
+            Authentication authentication) {
+
         try {
-            User updatedUser = userService.updateProfile(id, profile);
-            return ResponseEntity.ok(userModelAssembler.toDto(updatedUser));
+            // Validar que el usuario autenticado es el propietario del perfil
+            if (authentication == null || authentication.getName() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            Optional<User> userOpt = userService.findByUsername(authentication.getName());
+            if (userOpt.isEmpty() || !userOpt.get().getId().equals(id)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            // Actualizar el perfil
+            UserProfile updatedProfile = userService.updateUserProfile(id, updateProfileDTO);
+
+            // Retornar la respuesta con el perfil actualizado
+            Map<String, Object> response = Map.of(
+                    "id", updatedProfile.getId(),
+                    "descripcion", updatedProfile.getDescripcion(),
+                    "edad", updatedProfile.getEdad(),
+                    "deportePrincipal", updatedProfile.getDeportePrincipal(),
+                    "atributosDeportivos", updatedProfile.getAtributosDeportivos(),
+                    "mensaje", "Perfil actualizado correctamente"
+            );
+
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al actualizar el perfil: " + e.getMessage()));
         }
     }
 }

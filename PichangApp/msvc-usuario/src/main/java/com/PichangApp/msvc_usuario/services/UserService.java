@@ -1,5 +1,6 @@
 package com.PichangApp.msvc_usuario.services;
 
+import com.PichangApp.msvc_usuario.models.dtos.UpdateUserProfileDTO;
 import com.PichangApp.msvc_usuario.models.entities.User;
 import com.PichangApp.msvc_usuario.models.entities.UserProfile;
 
@@ -11,6 +12,6 @@ public interface UserService {
     List<User> findAll();
     Optional<User> findById(Long id);
     Optional<User> findByUsername(String username);
-    User updateProfile(Long id, UserProfile profile);
     void deleteById(Long id);
+    UserProfile updateUserProfile(Long userId, UpdateUserProfileDTO dto);
 }
