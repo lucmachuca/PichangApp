@@ -1,6 +1,7 @@
 package com.PichangApp.msvc_notificacion;
 
 import com.PichangApp.dto.MatchCreatedEvent;
+import com.PichangApp.dto.MensajeCreadoEvent;
 import com.PichangApp.msvc_notificacion.service.NotificacionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,36 @@ public class NotificacionListener {
                 "Notificaciones de match persistidas para usuarios {} y {}",
                 evento.usuarioAId(),
                 evento.usuarioBId()
+        );
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_NOTIFICACIONES_MENSAJE)
+    public void recibirEventoMensaje(MensajeCreadoEvent evento) {
+        log.info(
+                "Evento recibido por RabbitMQ: Mensaje creado. salaId={}, remitente={}, destinatario={}",
+                evento.salaId(),
+                evento.remitenteId(),
+                evento.destinatarioId()
+        );
+
+        UsuarioFeignClient.UsuarioBasicoDto remitente = obtenerUsuarioSeguro(evento.remitenteId());
+
+        String contenido = evento.contenido() != null ? evento.contenido() : "";
+
+        if (contenido.length() > 80) {
+            contenido = contenido.substring(0, 80) + "...";
+        }
+
+        notificacionService.crearNotificacion(
+                evento.destinatarioId(),
+                "Nuevo mensaje",
+                remitente.nombreCompleto() + " te envió: " + contenido,
+                "MENSAJE"
+        );
+
+        log.info(
+                "Notificación de mensaje persistida para usuario {}",
+                evento.destinatarioId()
         );
     }
 
