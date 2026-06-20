@@ -7,6 +7,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,14 +15,13 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 public class RabbitMQConfig {
 
-    public static final String QUEUE_NOTIFICACIONES_MATCH = "queue_notificaciones_match";
     public static final String EXCHANGE_MATCH = "match.exchange";
-    public static final String ROUTING_KEY_MATCH = "match.created";
+    public static final String ROUTING_KEY_MATCH_CREATED = "match.created";
+    public static final String QUEUE_NOTIFICACIONES_MATCH = "notificaciones.match.queue";
 
-    @Bean
-    public Queue queueNotificacionesMatch() {
-        return new Queue(QUEUE_NOTIFICACIONES_MATCH, true);
-    }
+    public static final String EXCHANGE_COMUNICACION = "comunicacion.exchange";
+    public static final String ROUTING_KEY_MENSAJE_CREADO = "comunicacion.mensaje.creado";
+    public static final String QUEUE_NOTIFICACIONES_MENSAJE = "notificaciones.mensaje.queue";
 
     @Bean
     public TopicExchange matchExchange() {
@@ -29,14 +29,40 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding matchNotificacionBinding(
-            Queue queueNotificacionesMatch,
-            TopicExchange matchExchange
+    public Queue notificacionesMatchQueue() {
+        return new Queue(QUEUE_NOTIFICACIONES_MATCH, true);
+    }
+
+    @Bean
+    public Binding notificacionesMatchBinding(
+            @Qualifier("notificacionesMatchQueue") Queue notificacionesMatchQueue,
+            @Qualifier("matchExchange") TopicExchange matchExchange
     ) {
         return BindingBuilder
-                .bind(queueNotificacionesMatch)
+                .bind(notificacionesMatchQueue)
                 .to(matchExchange)
-                .with(ROUTING_KEY_MATCH);
+                .with(ROUTING_KEY_MATCH_CREATED);
+    }
+
+    @Bean
+    public TopicExchange comunicacionExchange() {
+        return new TopicExchange(EXCHANGE_COMUNICACION);
+    }
+
+    @Bean
+    public Queue notificacionesMensajeQueue() {
+        return new Queue(QUEUE_NOTIFICACIONES_MENSAJE, true);
+    }
+
+    @Bean
+    public Binding notificacionesMensajeBinding(
+            @Qualifier("notificacionesMensajeQueue") Queue notificacionesMensajeQueue,
+            @Qualifier("comunicacionExchange") TopicExchange comunicacionExchange
+    ) {
+        return BindingBuilder
+                .bind(notificacionesMensajeQueue)
+                .to(comunicacionExchange)
+                .with(ROUTING_KEY_MENSAJE_CREADO);
     }
 
     @Bean
