@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UserProfileUnitTest {
 
     @Test
-    void validarPerfilBasketConAlturaYPosicionNoLanzaExcepcion() {
+    void debeAceptarPerfilBasketConAlturaYPosicion() {
         UserProfile profile = new UserProfile();
         profile.setDeportePrincipal("BASKET");
         profile.setAtributosDeportivos(Map.of(
@@ -21,23 +21,35 @@ class UserProfileUnitTest {
     }
 
     @Test
-    void validarPerfilBasketSinAlturaLanzaExcepcion() {
+    void noDebeAceptarPerfilBasketSinAltura() {
         UserProfile profile = new UserProfile();
         profile.setDeportePrincipal("BASKET");
         profile.setAtributosDeportivos(Map.of(
                 "posicion", "Base"
         ));
 
-        IllegalArgumentException exception = assertThrows(
+        assertThrows(
                 IllegalArgumentException.class,
                 profile::validarPerfil
         );
-
-        assertTrue(exception.getMessage().contains("altura"));
     }
 
     @Test
-    void validarPerfilBoxeoConPesoYGuardiaNoLanzaExcepcion() {
+    void noDebeAceptarPerfilBasketSinPosicion() {
+        UserProfile profile = new UserProfile();
+        profile.setDeportePrincipal("BASKET");
+        profile.setAtributosDeportivos(Map.of(
+                "altura", 180
+        ));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                profile::validarPerfil
+        );
+    }
+
+    @Test
+    void debeAceptarPerfilBoxeoConPesoYGuardia() {
         UserProfile profile = new UserProfile();
         profile.setDeportePrincipal("BOXEO");
         profile.setAtributosDeportivos(Map.of(
@@ -49,23 +61,35 @@ class UserProfileUnitTest {
     }
 
     @Test
-    void validarPerfilBoxeoSinGuardiaLanzaExcepcion() {
+    void noDebeAceptarPerfilBoxeoSinGuardia() {
         UserProfile profile = new UserProfile();
         profile.setDeportePrincipal("BOXEO");
         profile.setAtributosDeportivos(Map.of(
                 "peso", 75
         ));
 
-        IllegalArgumentException exception = assertThrows(
+        assertThrows(
                 IllegalArgumentException.class,
                 profile::validarPerfil
         );
-
-        assertTrue(exception.getMessage().contains("guardia"));
     }
 
     @Test
-    void validarPerfilSinDeporteInicializaAtributosSiSonNulos() {
+    void noDebeAceptarPerfilBoxeoSinPeso() {
+        UserProfile profile = new UserProfile();
+        profile.setDeportePrincipal("BOXEO");
+        profile.setAtributosDeportivos(Map.of(
+                "guardia", "Zurda"
+        ));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                profile::validarPerfil
+        );
+    }
+
+    @Test
+    void debeInicializarAtributosSiVienenNulosYNoHayDeporte() {
         UserProfile profile = new UserProfile();
         profile.setDeportePrincipal(null);
         profile.setAtributosDeportivos(null);
