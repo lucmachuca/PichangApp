@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class SalaChatUnitTest {
 
     @Test
-    void onCreateAsignaEstadoActivaYFechaCreacion() {
+    void DebeAsignarEstadoActivoYFechaAlCrearSala() {
         SalaChat sala = new SalaChat();
 
         sala.onCreate();
@@ -18,7 +18,7 @@ class SalaChatUnitTest {
     }
 
     @Test
-    void onCreateMantieneEstadoExistente() {
+    void NoDebeCambiarElEstadoSiYaVeniaDefinido() {
         SalaChat sala = new SalaChat();
         sala.setEstado(EstadoSala.ARCHIVADA);
 
