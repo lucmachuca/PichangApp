@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,7 +28,7 @@ class NotificacionServiceUnitTest {
     private NotificacionService notificacionService;
 
     @Test
-    void crearNotificacionLaGuardaComoNoLeida() {
+    void CreaNotificacion() {
         CrearNotificacionRequest request = new CrearNotificacionRequest(
                 11L,
                 "Nuevo match",
@@ -35,7 +36,7 @@ class NotificacionServiceUnitTest {
                 "MATCH"
         );
 
-        Notificacion guardada = Notificacion.builder()
+        Notificacion notificacionGuardada = Notificacion.builder()
                 .id(80L)
                 .usuarioId(11L)
                 .titulo("Nuevo match")
@@ -46,7 +47,7 @@ class NotificacionServiceUnitTest {
                 .build();
 
         when(notificacionRepository.save(any(Notificacion.class)))
-                .thenReturn(guardada);
+                .thenReturn(notificacionGuardada);
 
         NotificacionResponse response = notificacionService.crearNotificacion(request);
 
@@ -60,7 +61,45 @@ class NotificacionServiceUnitTest {
     }
 
     @Test
-    void marcarComoLeidaCambiaEstadoDeNotificacion() {
+    void ListarNotificacionesDeUnUsuario() {
+        Notificacion notificacion1 = Notificacion.builder()
+                .id(80L)
+                .usuarioId(11L)
+                .titulo("Nuevo match")
+                .mensaje("Tienes un nuevo match")
+                .tipo("MATCH")
+                .leida(false)
+                .fechaCreacion(LocalDateTime.now())
+                .build();
+
+        Notificacion notificacion2 = Notificacion.builder()
+                .id(81L)
+                .usuarioId(11L)
+                .titulo("Nuevo mensaje")
+                .mensaje("Tienes un nuevo mensaje")
+                .tipo("MENSAJE")
+                .leida(true)
+                .fechaCreacion(LocalDateTime.now())
+                .build();
+
+        when(notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(11L))
+                .thenReturn(List.of(notificacion1, notificacion2));
+
+        List<NotificacionResponse> resultado = notificacionService.listarPorUsuario(11L);
+
+        assertEquals(2, resultado.size());
+
+        assertEquals("Nuevo match", resultado.get(0).titulo());
+        assertFalse(resultado.get(0).leida());
+
+        assertEquals("Nuevo mensaje", resultado.get(1).titulo());
+        assertTrue(resultado.get(1).leida());
+
+        verify(notificacionRepository).findByUsuarioIdOrderByFechaCreacionDesc(11L);
+    }
+
+    @Test
+    void MarcarNotificacionComoLeida() {
         Notificacion notificacion = Notificacion.builder()
                 .id(80L)
                 .usuarioId(11L)
@@ -84,4 +123,5 @@ class NotificacionServiceUnitTest {
         verify(notificacionRepository).findById(80L);
         verify(notificacionRepository).save(notificacion);
     }
+
 }
