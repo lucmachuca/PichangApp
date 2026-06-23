@@ -1,6 +1,7 @@
 package com.PichangApp.msvc_usuario.services;
 
 import com.PichangApp.msvc_usuario.models.dtos.UpdateUserProfileDTO;
+import com.PichangApp.msvc_usuario.models.entities.Role;
 import com.PichangApp.msvc_usuario.models.entities.User;
 import com.PichangApp.msvc_usuario.models.entities.UserProfile;
 import com.PichangApp.msvc_usuario.repositories.RoleRepository;
@@ -170,4 +171,63 @@ class UserServiceImplUnitTest {
         verify(userRepository).findById(1L);
         verify(userProfileRepository, never()).save(any(UserProfile.class));
     }
+
+    @Test
+    void updateUserProfileConAtributosBasketFaltantesLanzaExcepcion() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("ep3_user_a");
+
+        UserProfile profile = new UserProfile();
+        profile.setId(10L);
+        profile.setUser(user);
+        user.setProfile(profile);
+
+        // Falta el atributo "altura" requerido para BASKET
+        UpdateUserProfileDTO dto = new UpdateUserProfileDTO(
+                "Jugador base incompleto",
+                22,
+                "BASKET",
+                Map.of(
+                        "posicion", "Base"
+                )
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            userService.updateUserProfile(1L, dto);
+        });
+
+        verify(userRepository).findById(1L);
+        verify(userProfileRepository, never()).save(any(UserProfile.class));
+    }
+
+    @Test
+    void save_NewUser_Success() {
+        User testUser = new User();
+        testUser.setId(1L);
+        testUser.setUsername("testuser");
+        testUser.setEmail("test@correo.com");
+        testUser.setPassword("password123");
+        testUser.setNombre("Test");
+        testUser.setApellido("User");
+
+        Role roleUser = new Role();
+        roleUser.setId(1L);
+        roleUser.setName("ROLE_USER");
+
+        when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
+        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        User savedUser = userService.save(testUser);
+
+        assertNotNull(savedUser);
+        assertEquals("testuser", savedUser.getUsername());
+        verify(passwordEncoder).encode("password123");
+        verify(userRepository).save(any(User.class));
+    }
+
 }

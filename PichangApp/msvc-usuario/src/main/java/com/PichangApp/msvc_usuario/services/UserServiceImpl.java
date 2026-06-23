@@ -35,6 +35,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public User save(User user) {
+        // 0. Validar si el username ya existe (Mejora IL3.2: Completitud y Seguridad)
+        Optional<User> existingUser = userRepository.findByUsername(user.getUsername());
+        if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("El username ya se encuentra en uso.");
+        }
+
         // 1. Encriptar contraseña
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 

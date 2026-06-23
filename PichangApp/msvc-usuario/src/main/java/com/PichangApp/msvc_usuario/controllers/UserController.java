@@ -23,8 +23,6 @@ import java.util.Optional;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-import com.PichangApp.msvc_usuario.models.entities.UserProfile;
-
 @RestController
 @RequestMapping("/api/users")
 @Validated

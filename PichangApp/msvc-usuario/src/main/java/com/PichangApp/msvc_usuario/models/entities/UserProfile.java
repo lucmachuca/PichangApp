@@ -30,6 +30,7 @@ public class UserProfile {
 
     private String deportePrincipal;
 
+    @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> atributosDeportivos = new HashMap<>();

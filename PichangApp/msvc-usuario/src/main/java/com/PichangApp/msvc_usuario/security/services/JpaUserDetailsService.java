@@ -2,7 +2,6 @@ package com.PichangApp.msvc_usuario.security.services;
 
 import com.PichangApp.msvc_usuario.models.entities.User;
 import com.PichangApp.msvc_usuario.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
