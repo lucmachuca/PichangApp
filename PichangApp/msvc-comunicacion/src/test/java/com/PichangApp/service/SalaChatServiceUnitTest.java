@@ -245,6 +245,40 @@ class SalaChatServiceUnitTest {
     }
 
     @Test
+    void enviarMensajeConUsuarioReceptorBloqueoAlRemitenteLanzaExcepcion() {
+        SalaChat sala = salaActiva();
+
+        EnviarMensajeRequest request = new EnviarMensajeRequest(
+                11L,
+                "Intento de mensaje con bloqueo receptor",
+                TipoMensaje.TEXTO,
+                null
+        );
+
+        MatchSocialDTO match = new MatchSocialDTO(
+                8L,
+                11L,
+                12L,
+                true,
+                LocalDateTime.now()
+        );
+
+        when(salaChatRepository.findById(7L)).thenReturn(Optional.of(sala));
+        when(matchFeignClient.obtenerMatchPorId(8L)).thenReturn(match);
+
+        // Simulamos que el receptor bloqueó al remitente
+        when(bloqueoUsuarioRepository.existsByIdUsuarioOrigenAndIdUsuarioBloqueado(11L, 12L)).thenReturn(false);
+        when(bloqueoUsuarioRepository.existsByIdUsuarioOrigenAndIdUsuarioBloqueado(12L, 11L)).thenReturn(true);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            salaChatService.enviarMensaje(7L, request);
+        });
+
+        verify(mensajeChatRepository, never()).save(any(MensajeChat.class));
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+    }
+
+    @Test
     void DebeListarMensajesDeUnaSala() {
         SalaChat sala = salaActiva();
 

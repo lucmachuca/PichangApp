@@ -124,4 +124,15 @@ class NotificacionServiceUnitTest {
         verify(notificacionRepository).save(notificacion);
     }
 
+    @Test
+    void marcarComoLeidaInexistenteLanzaExcepcion() {
+        when(notificacionRepository.findById(999L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            notificacionService.marcarComoLeida(999L);
+        });
+
+        verify(notificacionRepository).findById(999L);
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
+    }
 }
