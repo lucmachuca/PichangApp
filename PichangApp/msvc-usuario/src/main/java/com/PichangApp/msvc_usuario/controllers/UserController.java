@@ -112,10 +112,71 @@ public class UserController {
     public ResponseEntity<List<UserResponseDTO>> discoverUsers(
             @RequestParam(required = false) Long excludeId
     ) {
+
+        // Validar que venga el usuario actual
+        if (excludeId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Optional<User> usuarioActualOpt = userService.findById(excludeId);
+
+        if (usuarioActualOpt.isEmpty() || usuarioActualOpt.get().getProfile() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        User usuarioActual = usuarioActualOpt.get();
+
+        Double miLat = usuarioActual.getProfile().getLatitud();
+        Double miLng = usuarioActual.getProfile().getLongitud();
+        String miDeporte = usuarioActual.getProfile().getDeportePrincipal();
+
+        if (miLat == null || miLng == null || miDeporte == null) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        // Para pruebas puedes usar 50 km.
+        // Para producción puedes volver a 20 km.
+        double radioKm = 50.0;
+
         List<UserResponseDTO> users = userService.findAll()
                 .stream()
+
+                // Usuario habilitado
                 .filter(User::isEnabled)
-                .filter(user -> excludeId == null || !user.getId().equals(excludeId))
+
+                // No mostrarme a mí
+                .filter(user -> !user.getId().equals(excludeId))
+
+                // Debe tener perfil
+                .filter(user -> user.getProfile() != null)
+
+                // Debe tener deporte
+                .filter(user -> user.getProfile().getDeportePrincipal() != null)
+
+                // Debe tener ubicación
+                .filter(user ->
+                        user.getProfile().getLatitud() != null &&
+                                user.getProfile().getLongitud() != null)
+
+                // Mismo deporte
+                .filter(user ->
+                        miDeporte.equalsIgnoreCase(
+                                user.getProfile().getDeportePrincipal()
+                        ))
+
+                // Distancia
+                .filter(user -> {
+
+                    double distancia = calcularDistanciaKm(
+                            miLat,
+                            miLng,
+                            user.getProfile().getLatitud(),
+                            user.getProfile().getLongitud()
+                    );
+
+                    return distancia <= radioKm;
+                })
+
                 .map(userModelAssembler::toDto)
                 .toList();
 
@@ -202,6 +263,8 @@ public class UserController {
                     "edad", updatedProfile.getEdad(),
                     "deportePrincipal", updatedProfile.getDeportePrincipal(),
                     "atributosDeportivos", updatedProfile.getAtributosDeportivos(),
+                    "latitud", updatedProfile.getLatitud(),
+                    "longitud", updatedProfile.getLongitud(),
                     "mensaje", "Perfil actualizado correctamente"
             );
 
@@ -213,5 +276,29 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al actualizar el perfil: " + e.getMessage()));
         }
+    }
+
+    private double calcularDistanciaKm(
+            double lat1,
+            double lon1,
+            double lat2,
+            double lon2
+    ) {
+
+        final int R = 6371;
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+
+        double a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                        + Math.cos(Math.toRadians(lat1))
+                        * Math.cos(Math.toRadians(lat2))
+                        * Math.sin(dLon / 2)
+                        * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
     }
 }

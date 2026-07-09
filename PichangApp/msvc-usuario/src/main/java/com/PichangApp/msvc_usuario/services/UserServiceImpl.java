@@ -93,6 +93,13 @@ public class UserServiceImpl implements UserService {
         if (dto.getAtributosDeportivos() != null) {
             profile.setAtributosDeportivos(dto.getAtributosDeportivos());
         }
+        if (dto.getLatitud() != null) {
+            profile.setLatitud(dto.getLatitud());
+        }
+
+        if (dto.getLongitud() != null) {
+            profile.setLongitud(dto.getLongitud());
+        }
 
         // 4. Validar el perfil actualizado
         validateProfile(profile);

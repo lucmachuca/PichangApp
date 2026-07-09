@@ -41,6 +41,8 @@ public class UserModelAssembler implements RepresentationModelAssembler<User, En
             profileDTO.setFotoUrl(user.getProfile().getFotoUrl());
             profileDTO.setDeportePrincipal(user.getProfile().getDeportePrincipal());
             profileDTO.setAtributosDeportivos(user.getProfile().getAtributosDeportivos());
+            profileDTO.setLatitud(user.getProfile().getLatitud());
+            profileDTO.setLongitud(user.getProfile().getLongitud());
 
             dto.setProfile(profileDTO);
         }

@@ -33,7 +33,7 @@ class UserServiceImplUnitTest {
     @Mock
     private RoleRepository roleRepository;
 
-    @Mock
+    @Mock 
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks

@@ -10,4 +10,6 @@ public class UserProfileDTO {
     private String fotoUrl;
     private String deportePrincipal;
     private Map<String, Object> atributosDeportivos;
+    private Double latitud;
+    private Double longitud;
 }

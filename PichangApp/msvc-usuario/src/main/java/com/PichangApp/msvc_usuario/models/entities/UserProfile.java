@@ -30,6 +30,10 @@ public class UserProfile {
 
     private String deportePrincipal;
 
+    private Double latitud;
+
+    private Double longitud;
+
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
