@@ -136,6 +136,45 @@ public class UserServiceImpl implements UserService {
         return savedProfile;
     }
 
+    @Override
+    @Transactional
+    public void cambiarPassword(
+            Long userId,
+            String passwordActual,
+            String nuevaPassword,
+            String confirmarNuevaPassword
+    ) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + userId));
+
+        String actual = passwordActual == null ? "" : passwordActual.trim();
+        String nueva = nuevaPassword == null ? "" : nuevaPassword.trim();
+        String confirmacion = confirmarNuevaPassword == null ? "" : confirmarNuevaPassword.trim();
+
+        if (actual.isBlank()) {
+            throw new IllegalArgumentException("La contraseña actual es obligatoria.");
+        }
+
+        if (nueva.isBlank()) {
+            throw new IllegalArgumentException("La nueva contraseña es obligatoria.");
+        }
+
+        if (nueva.length() < 6) {
+            throw new IllegalArgumentException("La nueva contraseña debe tener al menos 6 caracteres.");
+        }
+
+        if (!nueva.equals(confirmacion)) {
+            throw new IllegalArgumentException("La nueva contraseña y su confirmación no coinciden.");
+        }
+
+        if (!passwordEncoder.matches(actual, user.getPassword())) {
+            throw new IllegalArgumentException("La contraseña actual no es correcta.");
+        }
+
+        user.setPassword(passwordEncoder.encode(nueva));
+        userRepository.save(user);
+    }
+
     private void validateProfile(UserProfile profile) {
         if (profile.getDeportePrincipal() == null || profile.getDeportePrincipal().isBlank()) {
             throw new IllegalArgumentException("El deporte principal es obligatorio");

@@ -1,6 +1,7 @@
 package com.PichangApp.msvc_usuario.controllers;
 
 import com.PichangApp.msvc_usuario.assemblers.UserModelAssembler;
+import com.PichangApp.msvc_usuario.models.dtos.CambiarPasswordRequest;
 import com.PichangApp.msvc_usuario.models.dtos.UserResponseDTO;
 import com.PichangApp.msvc_usuario.models.dtos.UsuarioBasicoDTO;
 import com.PichangApp.msvc_usuario.models.dtos.UpdateUserProfileDTO;
@@ -369,6 +370,42 @@ public class UserController {
             case "NATACION" -> List.of("Libre", "Espalda", "Pecho", "Mariposa", "Recreativo");
             default -> List.of("Recreativo");
         };
+    }
+
+    @PutMapping("/{id}/password")
+    public ResponseEntity<Map<String, Object>> cambiarPassword(
+            @PathVariable Long id,
+            @Valid @RequestBody CambiarPasswordRequest request,
+            Authentication authentication
+    ) {
+        try {
+            if (authentication == null || authentication.getName() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            Optional<User> userOpt = userService.findByUsername(authentication.getName());
+
+            if (userOpt.isEmpty() || !userOpt.get().getId().equals(id)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            userService.cambiarPassword(
+                    id,
+                    request.getPasswordActual(),
+                    request.getNuevaPassword(),
+                    request.getConfirmarNuevaPassword()
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Contraseña actualizada correctamente"
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al cambiar la contraseña: " + e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}/profile")

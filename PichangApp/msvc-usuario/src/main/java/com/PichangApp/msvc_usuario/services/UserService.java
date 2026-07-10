@@ -22,5 +22,6 @@ public interface UserService {
     Optional<User> findById(Long id);
     Optional<User> findByUsername(String username);
     void deleteById(Long id);
+    void cambiarPassword(Long userId, String passwordActual, String nuevaPassword, String confirmarNuevaPassword);
     UserProfile updateUserProfile(Long userId, UpdateUserProfileDTO dto);
 }
