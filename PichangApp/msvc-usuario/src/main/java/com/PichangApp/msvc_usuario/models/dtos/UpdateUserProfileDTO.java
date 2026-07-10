@@ -13,10 +13,9 @@ public class UpdateUserProfileDTO {
 
     private String descripcion;
     private Integer edad;
+    private String sexo;
     private String deportePrincipal;
     private Map<String, Object> atributosDeportivos;
-
-    // NUEVO
     private Double latitud;
     private Double longitud;
 }

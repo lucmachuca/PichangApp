@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -59,6 +60,10 @@ public class UserServiceImpl implements UserService {
 
         // 3. Validar y asociar el Perfil Dinámico
         if (user.getProfile() != null) {
+            if (user.getProfile().getLatitud() != null && user.getProfile().getLongitud() != null) {
+                user.getProfile().setUltimaUbicacionAt(LocalDateTime.now());
+            }
+
             validateProfile(user.getProfile());
             user.getProfile().setUser(user);
         }
@@ -87,18 +92,29 @@ public class UserServiceImpl implements UserService {
         if (dto.getEdad() != null) {
             profile.setEdad(dto.getEdad());
         }
+        if (dto.getSexo() != null) {
+            profile.setSexo(dto.getSexo());
+        }
         if (dto.getDeportePrincipal() != null) {
             profile.setDeportePrincipal(dto.getDeportePrincipal());
         }
         if (dto.getAtributosDeportivos() != null) {
             profile.setAtributosDeportivos(dto.getAtributosDeportivos());
         }
+        boolean actualizoUbicacion = false;
+
         if (dto.getLatitud() != null) {
             profile.setLatitud(dto.getLatitud());
+            actualizoUbicacion = true;
         }
 
         if (dto.getLongitud() != null) {
             profile.setLongitud(dto.getLongitud());
+            actualizoUbicacion = true;
+        }
+
+        if (actualizoUbicacion && profile.getLatitud() != null && profile.getLongitud() != null) {
+            profile.setUltimaUbicacionAt(LocalDateTime.now());
         }
 
         // 4. Validar el perfil actualizado

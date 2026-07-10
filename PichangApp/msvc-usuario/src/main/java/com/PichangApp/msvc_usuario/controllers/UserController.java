@@ -16,9 +16,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -110,63 +112,109 @@ public class UserController {
 
     @GetMapping("/discover")
     public ResponseEntity<List<UserResponseDTO>> discoverUsers(
-            @RequestParam(required = false) Long excludeId
+            @RequestParam(required = false) Long excludeId,
+            @RequestParam(defaultValue = "0") Double distanciaMinKm,
+            @RequestParam(defaultValue = "50") Double distanciaMaxKm,
+            @RequestParam(defaultValue = "0") Integer edadMin,
+            @RequestParam(defaultValue = "120") Integer edadMax,
+            @RequestParam(defaultValue = "TODOS") String sexo,
+            @RequestParam(defaultValue = "30") Integer diasMaxUbicacion
     ) {
 
-        // Validar que venga el usuario actual
         if (excludeId == null) {
             return ResponseEntity.badRequest().build();
         }
 
         Optional<User> usuarioActualOpt = userService.findById(excludeId);
 
-        if (usuarioActualOpt.isEmpty() || usuarioActualOpt.get().getProfile() == null) {
-            return ResponseEntity.badRequest().build();
+        if (usuarioActualOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         User usuarioActual = usuarioActualOpt.get();
+        UserProfile perfilActual = usuarioActual.getProfile();
 
-        Double miLat = usuarioActual.getProfile().getLatitud();
-        Double miLng = usuarioActual.getProfile().getLongitud();
-        String miDeporte = usuarioActual.getProfile().getDeportePrincipal();
-
-        if (miLat == null || miLng == null || miDeporte == null) {
+        if (perfilActual == null) {
             return ResponseEntity.ok(List.of());
         }
 
-        // Para pruebas puedes usar 50 km.
-        // Para producción puedes volver a 20 km.
-        double radioKm = 50.0;
+        String miDeporte = normalizarTexto(perfilActual.getDeportePrincipal());
+        Double miLat = perfilActual.getLatitud();
+        Double miLng = perfilActual.getLongitud();
+
+        if (miDeporte == null || !coordenadasValidas(miLat, miLng)) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        double minimoKm = normalizarDistancia(distanciaMinKm, 0.0);
+        double maximoKm = normalizarDistancia(distanciaMaxKm, 50.0);
+
+        if (minimoKm > maximoKm) {
+            double temporal = minimoKm;
+            minimoKm = maximoKm;
+            maximoKm = temporal;
+        }
+
+        int edadMinima = normalizarEdad(edadMin, 0);
+        int edadMaxima = normalizarEdad(edadMax, 120);
+
+        if (edadMinima > edadMaxima) {
+            int temporal = edadMinima;
+            edadMinima = edadMaxima;
+            edadMaxima = temporal;
+        }
+
+        int diasUbicacion = diasMaxUbicacion == null ? 30 : diasMaxUbicacion;
+
+        if (diasUbicacion < 1) {
+            diasUbicacion = 1;
+        }
+
+        if (diasUbicacion > 365) {
+            diasUbicacion = 365;
+        }
+
+        final double distanciaMinimaFinal = minimoKm;
+        final double distanciaMaximaFinal = maximoKm;
+        final int edadMinimaFinal = edadMinima;
+        final int edadMaximaFinal = edadMaxima;
+        final String sexoFiltroFinal = normalizarSexoFiltro(sexo);
+        final LocalDateTime fechaMinimaUbicacion = LocalDateTime.now().minusDays(diasUbicacion);
 
         List<UserResponseDTO> users = userService.findAll()
                 .stream()
-
-                // Usuario habilitado
                 .filter(User::isEnabled)
-
-                // No mostrarme a mí
-                .filter(user -> !user.getId().equals(excludeId))
-
-                // Debe tener perfil
+                .filter(user -> user.getId() != null && !user.getId().equals(excludeId))
                 .filter(user -> user.getProfile() != null)
-
-                // Debe tener deporte
-                .filter(user -> user.getProfile().getDeportePrincipal() != null)
-
-                // Debe tener ubicación
-                .filter(user ->
-                        user.getProfile().getLatitud() != null &&
-                                user.getProfile().getLongitud() != null)
-
-                // Mismo deporte
-                .filter(user ->
-                        miDeporte.equalsIgnoreCase(
-                                user.getProfile().getDeportePrincipal()
-                        ))
-
-                // Distancia
+                .filter(user -> normalizarTexto(user.getProfile().getDeportePrincipal()) != null)
+                .filter(user -> miDeporte.equals(
+                        normalizarTexto(user.getProfile().getDeportePrincipal())
+                ))
+                .filter(user -> coordenadasValidas(
+                        user.getProfile().getLatitud(),
+                        user.getProfile().getLongitud()
+                ))
+                .filter(user -> ubicacionReciente(
+                        user.getProfile().getUltimaUbicacionAt(),
+                        fechaMinimaUbicacion
+                ))
                 .filter(user -> {
+                    Integer edadUsuario = user.getProfile().getEdad();
 
+                    return edadUsuario != null
+                            && edadUsuario >= edadMinimaFinal
+                            && edadUsuario <= edadMaximaFinal;
+                })
+                .filter(user -> {
+                    if (sexoFiltroFinal == null) {
+                        return true;
+                    }
+
+                    String sexoUsuario = normalizarTexto(user.getProfile().getSexo());
+
+                    return sexoFiltroFinal.equals(sexoUsuario);
+                })
+                .filter(user -> {
                     double distancia = calcularDistanciaKm(
                             miLat,
                             miLng,
@@ -174,13 +222,82 @@ public class UserController {
                             user.getProfile().getLongitud()
                     );
 
-                    return distancia <= radioKm;
+                    return distancia >= distanciaMinimaFinal
+                            && distancia <= distanciaMaximaFinal;
                 })
-
                 .map(userModelAssembler::toDto)
                 .toList();
 
         return ResponseEntity.ok(users);
+    }
+
+    private String normalizarTexto(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+
+        return texto.trim().toUpperCase();
+    }
+
+    private String normalizarSexoFiltro(String sexo) {
+        String valor = normalizarTexto(sexo);
+
+        if (valor == null || "TODOS".equals(valor)) {
+            return null;
+        }
+
+        return valor;
+    }
+
+    private boolean coordenadasValidas(Double latitud, Double longitud) {
+        if (latitud == null || longitud == null) {
+            return false;
+        }
+
+        return latitud >= -90
+                && latitud <= 90
+                && longitud >= -180
+                && longitud <= 180;
+    }
+
+    private double normalizarDistancia(Double distancia, double valorDefecto) {
+        if (distancia == null || distancia.isNaN() || distancia.isInfinite()) {
+            return valorDefecto;
+        }
+
+        if (distancia < 0) {
+            return 0;
+        }
+
+        if (distancia > 200) {
+            return 200;
+        }
+
+        return distancia;
+    }
+
+    private int normalizarEdad(Integer edad, int valorDefecto) {
+        if (edad == null) {
+            return valorDefecto;
+        }
+
+        if (edad < 0) {
+            return 0;
+        }
+
+        if (edad > 120) {
+            return 120;
+        }
+
+        return edad;
+    }
+
+    private boolean ubicacionReciente(LocalDateTime ultimaUbicacionAt, LocalDateTime fechaMinima) {
+        if (ultimaUbicacionAt == null) {
+            return false;
+        }
+
+        return !ultimaUbicacionAt.isBefore(fechaMinima);
     }
 
     @GetMapping("/profiles/config/{deporte}")
@@ -257,16 +374,17 @@ public class UserController {
             UserProfile updatedProfile = userService.updateUserProfile(id, updateProfileDTO);
 
             // Retornar la respuesta con el perfil actualizado
-            Map<String, Object> response = Map.of(
-                    "id", updatedProfile.getId(),
-                    "descripcion", updatedProfile.getDescripcion(),
-                    "edad", updatedProfile.getEdad(),
-                    "deportePrincipal", updatedProfile.getDeportePrincipal(),
-                    "atributosDeportivos", updatedProfile.getAtributosDeportivos(),
-                    "latitud", updatedProfile.getLatitud(),
-                    "longitud", updatedProfile.getLongitud(),
-                    "mensaje", "Perfil actualizado correctamente"
-            );
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("id", updatedProfile.getId());
+            response.put("descripcion", updatedProfile.getDescripcion());
+            response.put("edad", updatedProfile.getEdad());
+            response.put("sexo", updatedProfile.getSexo());
+            response.put("deportePrincipal", updatedProfile.getDeportePrincipal());
+            response.put("atributosDeportivos", updatedProfile.getAtributosDeportivos());
+            response.put("latitud", updatedProfile.getLatitud());
+            response.put("longitud", updatedProfile.getLongitud());
+            response.put("ultimaUbicacionAt", updatedProfile.getUltimaUbicacionAt());
+            response.put("mensaje", "Perfil actualizado correctamente");
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
