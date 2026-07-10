@@ -114,7 +114,7 @@ public class UserController {
     public ResponseEntity<List<UserResponseDTO>> discoverUsers(
             @RequestParam(required = false) Long excludeId,
             @RequestParam(defaultValue = "0") Double distanciaMinKm,
-            @RequestParam(defaultValue = "50") Double distanciaMaxKm,
+            @RequestParam(defaultValue = "500") Double distanciaMaxKm,
             @RequestParam(defaultValue = "0") Integer edadMin,
             @RequestParam(defaultValue = "120") Integer edadMax,
             @RequestParam(defaultValue = "TODOS") String sexo,
@@ -269,8 +269,8 @@ public class UserController {
             return 0;
         }
 
-        if (distancia > 200) {
-            return 200;
+        if (distancia > 500) {
+            return 500;
         }
 
         return distancia;
