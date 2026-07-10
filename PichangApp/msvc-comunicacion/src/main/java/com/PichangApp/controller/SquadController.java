@@ -107,4 +107,14 @@ public class SquadController {
     ) {
         return ResponseEntity.ok(squadService.obtenerMensajes(squadId, usuarioId, page, size));
     }
+
+    @DeleteMapping("/{squadId}/miembros/{usuarioId}")
+    public ResponseEntity<Void> expulsarMiembro(
+            @PathVariable Long squadId,
+            @PathVariable Long usuarioId,
+            @RequestParam Long adminId
+    ) {
+        squadService.expulsarMiembro(squadId, adminId, usuarioId);
+        return ResponseEntity.noContent().build();
+    }
 }

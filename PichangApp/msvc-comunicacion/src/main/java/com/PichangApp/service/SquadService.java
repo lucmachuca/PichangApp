@@ -224,6 +224,39 @@ public class SquadService {
         return toMensajeResponse(mensaje);
     }
 
+    @Transactional
+    public void expulsarMiembro(Long squadId, Long adminId, Long usuarioId) {
+        Squad squad = obtenerSquadActivo(squadId);
+
+        validarAdminSquad(squadId, adminId);
+
+        if (adminId.equals(usuarioId)) {
+            throw new IllegalStateException("No puedes expulsarte a ti mismo del squad.");
+        }
+
+        if (squad.getCreadorId().equals(usuarioId)) {
+            throw new IllegalStateException("No puedes expulsar al creador del squad.");
+        }
+
+        SquadMiembro miembro = squadMiembroRepository.findBySquadIdAndUsuarioId(
+                squadId,
+                usuarioId
+        ).orElseThrow(() -> new IllegalArgumentException("El usuario no pertenece a este squad."));
+
+        if (miembro.getRol() == RolSquad.ADMIN) {
+            throw new IllegalStateException("No puedes expulsar a otro administrador.");
+        }
+
+        squadMiembroRepository.delete(miembro);
+
+        log.info(
+                "Miembro expulsado del squad. squadId={}, adminId={}, usuarioId={}",
+                squadId,
+                adminId,
+                usuarioId
+        );
+    }
+
     @Transactional(readOnly = true)
     public Page<MensajeSquadResponse> obtenerMensajes(Long squadId, Long usuarioId, int page, int size) {
         asegurarSquadExiste(squadId);
