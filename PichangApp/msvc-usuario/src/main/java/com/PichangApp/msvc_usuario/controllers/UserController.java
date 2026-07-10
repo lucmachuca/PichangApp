@@ -379,6 +379,7 @@ public class UserController {
             response.put("descripcion", updatedProfile.getDescripcion());
             response.put("edad", updatedProfile.getEdad());
             response.put("sexo", updatedProfile.getSexo());
+            response.put("fotoUrl", updatedProfile.getFotoUrl());
             response.put("deportePrincipal", updatedProfile.getDeportePrincipal());
             response.put("atributosDeportivos", updatedProfile.getAtributosDeportivos());
             response.put("latitud", updatedProfile.getLatitud());

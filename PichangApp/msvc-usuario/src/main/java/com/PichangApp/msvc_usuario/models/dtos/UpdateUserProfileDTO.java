@@ -13,10 +13,31 @@ public class UpdateUserProfileDTO {
     private String descripcion;
     private Integer edad;
     private String sexo;
+    private String fotoUrl;
     private String deportePrincipal;
     private Map<String, Object> atributosDeportivos;
     private Double latitud;
     private Double longitud;
+
+    public UpdateUserProfileDTO(
+            String descripcion,
+            Integer edad,
+            String sexo,
+            String fotoUrl,
+            String deportePrincipal,
+            Map<String, ?> atributosDeportivos,
+            Double latitud,
+            Double longitud
+    ) {
+        this.descripcion = descripcion;
+        this.edad = edad;
+        this.sexo = sexo;
+        this.fotoUrl = fotoUrl;
+        this.deportePrincipal = deportePrincipal;
+        this.atributosDeportivos = copiarAtributos(atributosDeportivos);
+        this.latitud = latitud;
+        this.longitud = longitud;
+    }
 
     public UpdateUserProfileDTO(
             String descripcion,
@@ -27,13 +48,16 @@ public class UpdateUserProfileDTO {
             Double latitud,
             Double longitud
     ) {
-        this.descripcion = descripcion;
-        this.edad = edad;
-        this.sexo = sexo;
-        this.deportePrincipal = deportePrincipal;
-        this.atributosDeportivos = copiarAtributos(atributosDeportivos);
-        this.latitud = latitud;
-        this.longitud = longitud;
+        this(
+                descripcion,
+                edad,
+                sexo,
+                null,
+                deportePrincipal,
+                atributosDeportivos,
+                latitud,
+                longitud
+        );
     }
 
     public UpdateUserProfileDTO(
@@ -47,6 +71,7 @@ public class UpdateUserProfileDTO {
         this(
                 descripcion,
                 edad,
+                null,
                 null,
                 deportePrincipal,
                 atributosDeportivos,

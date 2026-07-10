@@ -95,6 +95,9 @@ public class UserServiceImpl implements UserService {
         if (dto.getSexo() != null) {
             profile.setSexo(dto.getSexo());
         }
+        if (dto.getFotoUrl() != null) {
+            profile.setFotoUrl(dto.getFotoUrl());
+        }
         if (dto.getDeportePrincipal() != null) {
             profile.setDeportePrincipal(dto.getDeportePrincipal());
         }
