@@ -302,31 +302,10 @@ public class UserController {
 
     @GetMapping("/profiles/config/{deporte}")
     public ResponseEntity<Map<String, Object>> getProfileConfig(@PathVariable String deporte) {
-        Map<String, Object> config;
+        String deporteNormalizado = deporte == null ? "" : deporte.trim().toUpperCase();
 
-        switch (deporte.toUpperCase()) {
-            case "BASKET" -> config = Map.of(
-                    "deporte", "BASKET",
-                    "campos_requeridos", List.of(
-                            Map.of(
-                                    "nombre", "altura",
-                                    "tipo", "number",
-                                    "unidad", "cm"
-                            ),
-                            Map.of(
-                                    "nombre", "posicion",
-                                    "tipo", "string",
-                                    "opciones", List.of(
-                                            "Base",
-                                            "Escolta",
-                                            "Alero",
-                                            "Ala-Pívot",
-                                            "Pívot"
-                                    )
-                            )
-                    )
-            );
-            case "BOXEO" -> config = Map.of(
+        if ("BOXEO".equals(deporteNormalizado)) {
+            return ResponseEntity.ok(Map.of(
                     "deporte", "BOXEO",
                     "campos_requeridos", List.of(
                             Map.of(
@@ -343,14 +322,60 @@ public class UserController {
                                     )
                             )
                     )
-            );
-            default -> {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Deporte no soportado"));
-            }
+            ));
         }
 
-        return ResponseEntity.ok(config);
+        List<String> deportesConAlturaYPosicion = List.of(
+                "BASKET",
+                "FUTBOL",
+                "FUTSAL",
+                "TENIS",
+                "PADEL",
+                "VOLEIBOL",
+                "RUNNING",
+                "CICLISMO",
+                "CALISTENIA",
+                "TREKKING",
+                "NATACION"
+        );
+
+        if (!deportesConAlturaYPosicion.contains(deporteNormalizado)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Deporte no soportado"));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "deporte", deporteNormalizado,
+                "campos_requeridos", List.of(
+                        Map.of(
+                                "nombre", "altura",
+                                "tipo", "number",
+                                "unidad", "cm"
+                        ),
+                        Map.of(
+                                "nombre", "posicion",
+                                "tipo", "string",
+                                "opciones", opcionesPorDeporte(deporteNormalizado)
+                        )
+                )
+        ));
+    }
+
+    private List<String> opcionesPorDeporte(String deporte) {
+        return switch (deporte) {
+            case "BASKET" -> List.of("Base", "Escolta", "Alero", "Ala Pívot", "Pívot");
+            case "FUTBOL" -> List.of("Arquero", "Defensa", "Mediocampista", "Delantero");
+            case "FUTSAL" -> List.of("Arquero", "Cierre", "Ala", "Pívot");
+            case "TENIS" -> List.of("Singles", "Dobles", "Mixto", "Recreativo");
+            case "PADEL" -> List.of("Drive", "Revés", "Ambos lados", "Recreativo");
+            case "VOLEIBOL" -> List.of("Armador", "Punta", "Central", "Opuesto", "Líbero");
+            case "RUNNING" -> List.of("5K", "10K", "Media maratón", "Maratón", "Trail");
+            case "CICLISMO" -> List.of("Ruta", "MTB", "Urbano", "Gravel", "Recreativo");
+            case "CALISTENIA" -> List.of("Principiante", "Intermedio", "Avanzado", "Street workout");
+            case "TREKKING" -> List.of("Principiante", "Intermedio", "Avanzado", "Alta montaña");
+            case "NATACION" -> List.of("Libre", "Espalda", "Pecho", "Mariposa", "Recreativo");
+            default -> List.of("Recreativo");
+        };
     }
 
     @PutMapping("/{id}/profile")

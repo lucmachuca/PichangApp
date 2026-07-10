@@ -64,17 +64,17 @@ public class UserProfile {
             return;
         }
 
-        String deporte = deportePrincipal.toUpperCase();
-
-        if ("BASKET".equals(deporte)) {
-            validarCampoObligatorio("altura");
-            validarCampoObligatorio("posicion");
-        }
+        String deporte = deportePrincipal.trim().toUpperCase();
+        deportePrincipal = deporte;
 
         if ("BOXEO".equals(deporte)) {
             validarCampoObligatorio("peso");
             validarCampoObligatorio("guardia");
+            return;
         }
+
+        validarCampoObligatorio("altura");
+        validarCampoObligatorio("posicion");
     }
 
     private void validarCampoObligatorio(String campo) {

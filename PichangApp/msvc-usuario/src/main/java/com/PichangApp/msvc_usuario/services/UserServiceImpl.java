@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.time.LocalDateTime;
 
 @Service
@@ -136,7 +137,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private void validateProfile(UserProfile profile) {
-        if (profile.getDeportePrincipal() == null) {
+        if (profile.getDeportePrincipal() == null || profile.getDeportePrincipal().isBlank()) {
             throw new IllegalArgumentException("El deporte principal es obligatorio");
         }
 
@@ -145,18 +146,40 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Los atributos deportivos no pueden ser nulos");
         }
 
-        switch (profile.getDeportePrincipal().toUpperCase()) {
-            case "BASKET" -> {
-                if (!atributos.containsKey("altura") || !atributos.containsKey("posicion")) {
-                    throw new IllegalArgumentException("Para Basket, la altura y posición son obligatorias.");
-                }
+        String deporte = profile.getDeportePrincipal().trim().toUpperCase();
+
+        Set<String> deportesSoportados = Set.of(
+                "BASKET",
+                "BOXEO",
+                "FUTBOL",
+                "FUTSAL",
+                "TENIS",
+                "PADEL",
+                "VOLEIBOL",
+                "RUNNING",
+                "CICLISMO",
+                "CALISTENIA",
+                "TREKKING",
+                "NATACION"
+        );
+
+        if (!deportesSoportados.contains(deporte)) {
+            throw new IllegalArgumentException("Deporte no soportado: " + profile.getDeportePrincipal());
+        }
+
+        profile.setDeportePrincipal(deporte);
+
+        if ("BOXEO".equals(deporte)) {
+            if (!atributos.containsKey("peso") || !atributos.containsKey("guardia")) {
+                throw new IllegalArgumentException("Para Boxeo, el peso y la guardia son obligatorios.");
             }
-            case "BOXEO" -> {
-                if (!atributos.containsKey("peso") || !atributos.containsKey("guardia")) {
-                    throw new IllegalArgumentException("Para Boxeo, el peso y la guardia son obligatorios.");
-                }
-            }
-            default -> throw new IllegalArgumentException("Deporte no soportado: " + profile.getDeportePrincipal());
+            return;
+        }
+
+        if (!atributos.containsKey("altura") || !atributos.containsKey("posicion")) {
+            throw new IllegalArgumentException(
+                    "Para " + deporte + ", la altura y la posición/especialidad son obligatorias."
+            );
         }
     }
 
