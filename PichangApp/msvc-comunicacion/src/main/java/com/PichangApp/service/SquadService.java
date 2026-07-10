@@ -1,5 +1,6 @@
 package com.PichangApp.service;
 
+import com.PichangApp.config.RabbitMQConfig;
 import com.PichangApp.dto.*;
 import com.PichangApp.model.MensajeSquad;
 import com.PichangApp.model.Squad;
@@ -14,6 +15,7 @@ import com.PichangApp.repository.SquadRepository;
 import com.PichangApp.repository.SquadSolicitudRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class SquadService {
     private final SquadMiembroRepository squadMiembroRepository;
     private final SquadSolicitudRepository squadSolicitudRepository;
     private final MensajeSquadRepository mensajeSquadRepository;
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     public SquadResponse crearSquad(CrearSquadRequest request) {
@@ -139,6 +142,8 @@ public class SquadService {
 
         solicitud = squadSolicitudRepository.save(solicitud);
 
+        publicarSolicitudSquadCreada(solicitud);
+
         return toSolicitudResponse(solicitud);
     }
 
@@ -185,7 +190,11 @@ public class SquadService {
         solicitud.setEstado(EstadoSolicitudSquad.ACEPTADA);
         solicitud.setFechaRespuesta(LocalDateTime.now());
 
-        return toSolicitudResponse(squadSolicitudRepository.save(solicitud));
+        solicitud = squadSolicitudRepository.save(solicitud);
+
+        publicarSolicitudSquadAceptada(solicitud, adminId);
+
+        return toSolicitudResponse(solicitud);
     }
 
     @Transactional
@@ -268,6 +277,74 @@ public class SquadService {
         return mensajeSquadRepository
                 .findBySquadIdOrderByFechaEnvioDesc(squadId, PageRequest.of(page, size))
                 .map(this::toMensajeResponse);
+    }
+
+    private void publicarSolicitudSquadCreada(SquadSolicitud solicitud) {
+        try {
+            Squad squad = solicitud.getSquad();
+
+            SquadSolicitudCreadaEvent event = new SquadSolicitudCreadaEvent(
+                    solicitud.getId(),
+                    squad.getId(),
+                    squad.getNombre(),
+                    solicitud.getUsuarioId(),
+                    squad.getCreadorId()
+            );
+
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE_COMUNICACION,
+                    RabbitMQConfig.ROUTING_KEY_SQUAD_SOLICITUD_CREADA,
+                    event
+            );
+
+            log.info(
+                    "SquadSolicitudCreadaEvent enviado. solicitudId={}, squadId={}, solicitanteId={}, adminId={}",
+                    event.solicitudId(),
+                    event.squadId(),
+                    event.solicitanteId(),
+                    event.adminId()
+            );
+        } catch (Exception e) {
+            log.warn(
+                    "No se pudo publicar notificación de solicitud squad. solicitudId={}, motivo={}",
+                    solicitud.getId(),
+                    e.getMessage()
+            );
+        }
+    }
+
+    private void publicarSolicitudSquadAceptada(SquadSolicitud solicitud, Long adminId) {
+        try {
+            Squad squad = solicitud.getSquad();
+
+            SquadSolicitudAceptadaEvent event = new SquadSolicitudAceptadaEvent(
+                    solicitud.getId(),
+                    squad.getId(),
+                    squad.getNombre(),
+                    solicitud.getUsuarioId(),
+                    adminId
+            );
+
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE_COMUNICACION,
+                    RabbitMQConfig.ROUTING_KEY_SQUAD_SOLICITUD_ACEPTADA,
+                    event
+            );
+
+            log.info(
+                    "SquadSolicitudAceptadaEvent enviado. solicitudId={}, squadId={}, usuarioId={}, adminId={}",
+                    event.solicitudId(),
+                    event.squadId(),
+                    event.usuarioId(),
+                    event.adminId()
+            );
+        } catch (Exception e) {
+            log.warn(
+                    "No se pudo publicar notificación de aceptación squad. solicitudId={}, motivo={}",
+                    solicitud.getId(),
+                    e.getMessage()
+            );
+        }
     }
 
     private Squad obtenerSquadActivo(Long squadId) {

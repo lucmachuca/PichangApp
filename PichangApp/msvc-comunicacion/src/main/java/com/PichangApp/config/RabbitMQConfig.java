@@ -29,6 +29,8 @@ public class RabbitMQConfig {
 
     public static final String EXCHANGE_COMUNICACION = "comunicacion.exchange";
     public static final String ROUTING_KEY_MENSAJE_CREADO = "comunicacion.mensaje.creado";
+    public static final String ROUTING_KEY_SQUAD_SOLICITUD_CREADA = "comunicacion.squad.solicitud.creada";
+    public static final String ROUTING_KEY_SQUAD_SOLICITUD_ACEPTADA = "comunicacion.squad.solicitud.aceptada";
 
     @Bean
     public Queue matchCreatedQueue() {

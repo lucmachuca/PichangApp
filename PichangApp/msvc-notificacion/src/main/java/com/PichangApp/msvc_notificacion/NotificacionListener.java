@@ -2,6 +2,8 @@ package com.PichangApp.msvc_notificacion;
 
 import com.PichangApp.dto.MatchCreatedEvent;
 import com.PichangApp.dto.MensajeCreadoEvent;
+import com.PichangApp.dto.SquadSolicitudAceptadaEvent;
+import com.PichangApp.dto.SquadSolicitudCreadaEvent;
 import com.PichangApp.msvc_notificacion.service.NotificacionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,15 +31,15 @@ public class NotificacionListener {
 
         notificacionService.crearNotificacion(
                 evento.usuarioAId(),
-                "Nuevo MatchSocial",
-                "Hiciste match con " + usuarioB.nombreCompleto() + ". Ya pueden conversar.",
+                "Nuevo match deportivo",
+                "Hiciste match deportivo con " + usuarioB.nombreCompleto() + ". Ya pueden conversar.",
                 "MATCH"
         );
 
         notificacionService.crearNotificacion(
                 evento.usuarioBId(),
-                "Nuevo MatchSocial",
-                "Hiciste match con " + usuarioA.nombreCompleto() + ". Ya pueden conversar.",
+                "Nuevo match deportivo",
+                "Hiciste match deportivo con " + usuarioA.nombreCompleto() + ". Ya pueden conversar.",
                 "MATCH"
         );
 
@@ -76,6 +78,65 @@ public class NotificacionListener {
                 "Notificación de mensaje persistida para usuario {}",
                 evento.destinatarioId()
         );
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_NOTIFICACIONES_SQUAD_SOLICITUD_CREADA)
+    public void recibirSolicitudSquadCreada(SquadSolicitudCreadaEvent evento) {
+        log.info(
+                "Evento recibido por RabbitMQ: solicitud squad creada. solicitudId={}, squadId={}, solicitante={}, admin={}",
+                evento.solicitudId(),
+                evento.squadId(),
+                evento.solicitanteId(),
+                evento.adminId()
+        );
+
+        UsuarioFeignClient.UsuarioBasicoDto solicitante = obtenerUsuarioSeguro(evento.solicitanteId());
+        String squadNombre = nombreSquadSeguro(evento.squadNombre());
+
+        notificacionService.crearNotificacion(
+                evento.adminId(),
+                "Nueva solicitud de squad",
+                solicitante.nombreCompleto() + " quiere entrar a " + squadNombre + ". Revisa las solicitudes del squad.",
+                "SQUAD_SOLICITUD"
+        );
+
+        log.info(
+                "Notificación de solicitud squad persistida para admin {}",
+                evento.adminId()
+        );
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_NOTIFICACIONES_SQUAD_SOLICITUD_ACEPTADA)
+    public void recibirSolicitudSquadAceptada(SquadSolicitudAceptadaEvent evento) {
+        log.info(
+                "Evento recibido por RabbitMQ: solicitud squad aceptada. solicitudId={}, squadId={}, usuario={}, admin={}",
+                evento.solicitudId(),
+                evento.squadId(),
+                evento.usuarioId(),
+                evento.adminId()
+        );
+
+        String squadNombre = nombreSquadSeguro(evento.squadNombre());
+
+        notificacionService.crearNotificacion(
+                evento.usuarioId(),
+                "Te aceptaron en un squad",
+                "Tu solicitud para entrar a " + squadNombre + " fue aceptada. Ya puedes entrar al chat grupal.",
+                "SQUAD_ACEPTADA"
+        );
+
+        log.info(
+                "Notificación de aceptación squad persistida para usuario {}",
+                evento.usuarioId()
+        );
+    }
+
+    private String nombreSquadSeguro(String nombre) {
+        if (nombre == null || nombre.isBlank()) {
+            return "el squad";
+        }
+
+        return nombre.trim();
     }
 
     private UsuarioFeignClient.UsuarioBasicoDto obtenerUsuarioSeguro(Long id) {
