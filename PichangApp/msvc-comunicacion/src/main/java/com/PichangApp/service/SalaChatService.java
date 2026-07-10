@@ -2,12 +2,15 @@ package com.PichangApp.service;
 
 import com.PichangApp.client.MatchFeignClient;
 import com.PichangApp.client.UsuarioFeignClient;
+import com.PichangApp.config.RabbitMQConfig;
 import com.PichangApp.dto.CrearSalaRequest;
 import com.PichangApp.dto.EnviarMensajeRequest;
 import com.PichangApp.dto.MatchSocialDTO;
 import com.PichangApp.dto.MensajeChatResponse;
+import com.PichangApp.dto.MensajeCreadoEvent;
 import com.PichangApp.dto.SalaChatResponse;
 import com.PichangApp.dto.UsuarioBasicoDTO;
+import com.PichangApp.model.BloqueoUsuario;
 import com.PichangApp.model.MensajeChat;
 import com.PichangApp.model.SalaChat;
 import com.PichangApp.model.enums.EstadoSala;
@@ -17,15 +20,17 @@ import com.PichangApp.repository.MensajeChatRepository;
 import com.PichangApp.repository.SalaChatRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.PichangApp.config.RabbitMQConfig;
-import com.PichangApp.dto.MensajeCreadoEvent;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +70,8 @@ public class SalaChatService {
                 request.matchSocialId()
         );
 
-        return toResponse(sala);
+        Map<Long, UsuarioBasicoDTO> usuariosCache = new HashMap<>();
+        return toResponse(sala, usuariosCache, Set.of());
     }
 
     @Transactional
@@ -147,16 +153,75 @@ public class SalaChatService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public List<SalaChatResponse> obtenerSalasPorUsuario(Long userId) {
-        return salaChatRepository.findByUserIdAndStatus(userId, EstadoSala.ACTIVA)
-                .stream()
-                .map(this::toResponse)
+        List<SalaChat> salas = salaChatRepository.findByUserIdAndStatus(userId, EstadoSala.ACTIVA);
+
+        Map<Long, UsuarioBasicoDTO> usuariosCache = new HashMap<>();
+
+        List<Long> otrosUsuariosIds = salas.stream()
+                .map(sala -> obtenerReceptorId(sala.getUsuarioAId(), sala.getUsuarioBId(), userId))
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+
+        Set<Long> salasBloqueadasIds = obtenerSalasBloqueadasIds(userId, otrosUsuariosIds, salas);
+
+        return salas.stream()
+                .map(sala -> toResponse(sala, usuariosCache, salasBloqueadasIds))
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public Page<MensajeChatResponse> obtenerMensajes(Long salaId, int page, int size) {
-        return mensajeChatRepository.findBySalaChatIdOrderByFechaEnvioDesc(salaId, PageRequest.of(page, size))
+        int sizeSeguro = Math.max(1, Math.min(size, 80));
+
+        return mensajeChatRepository
+                .findBySalaChatIdOrderByFechaEnvioDesc(salaId, PageRequest.of(page, sizeSeguro))
                 .map(this::toMessageResponse);
+    }
+
+    private Set<Long> obtenerSalasBloqueadasIds(
+            Long userId,
+            List<Long> otrosUsuariosIds,
+            List<SalaChat> salas
+    ) {
+        if (otrosUsuariosIds == null || otrosUsuariosIds.isEmpty()) {
+            return Set.of();
+        }
+
+        List<BloqueoUsuario> bloqueos = bloqueoUsuarioRepository.findBloqueosEntreUsuarioYOtros(
+                userId,
+                otrosUsuariosIds
+        );
+
+        if (bloqueos.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<Long> usuariosBloqueadosEntreSi = new HashSet<>();
+
+        for (BloqueoUsuario bloqueo : bloqueos) {
+            if (userId.equals(bloqueo.getIdUsuarioOrigen())) {
+                usuariosBloqueadosEntreSi.add(bloqueo.getIdUsuarioBloqueado());
+            }
+
+            if (userId.equals(bloqueo.getIdUsuarioBloqueado())) {
+                usuariosBloqueadosEntreSi.add(bloqueo.getIdUsuarioOrigen());
+            }
+        }
+
+        Set<Long> salasBloqueadasIds = new HashSet<>();
+
+        for (SalaChat sala : salas) {
+            Long otroUsuarioId = obtenerReceptorId(sala.getUsuarioAId(), sala.getUsuarioBId(), userId);
+
+            if (usuariosBloqueadosEntreSi.contains(otroUsuarioId)) {
+                salasBloqueadasIds.add(sala.getId());
+            }
+        }
+
+        return salasBloqueadasIds;
     }
 
     private void validarMatchParaSala(Long matchSocialId, Long usuarioAId, Long usuarioBId) {
@@ -202,12 +267,23 @@ public class SalaChatService {
             return usuarioAId;
         }
 
-        throw new IllegalArgumentException("El remitente no pertenece a la sala.");
+        return 0L;
     }
 
-    private SalaChatResponse toResponse(SalaChat sala) {
-        UsuarioBasicoDTO usuarioA = obtenerUsuarioSeguro(sala.getUsuarioAId());
-        UsuarioBasicoDTO usuarioB = obtenerUsuarioSeguro(sala.getUsuarioBId());
+    private SalaChatResponse toResponse(
+            SalaChat sala,
+            Map<Long, UsuarioBasicoDTO> usuariosCache,
+            Set<Long> salasBloqueadasIds
+    ) {
+        UsuarioBasicoDTO usuarioA = obtenerUsuarioSeguro(sala.getUsuarioAId(), usuariosCache);
+        UsuarioBasicoDTO usuarioB = obtenerUsuarioSeguro(sala.getUsuarioBId(), usuariosCache);
+
+        MensajeChatResponse ultimoMensaje = mensajeChatRepository
+                .findFirstBySalaChatIdOrderByFechaEnvioDesc(sala.getId())
+                .map(this::toMessageResponse)
+                .orElse(null);
+
+        boolean bloqueada = salasBloqueadasIds != null && salasBloqueadasIds.contains(sala.getId());
 
         return new SalaChatResponse(
                 sala.getId(),
@@ -218,20 +294,22 @@ public class SalaChatService {
                 usuarioB.nombreCompleto(),
                 usuarioA.username(),
                 usuarioB.username(),
+                usuarioA.fotoUrl(),
+                usuarioB.fotoUrl(),
                 sala.getEstado(),
-                sala.getFechaCreacion()
+                sala.getFechaCreacion(),
+                ultimoMensaje,
+                bloqueada
         );
     }
 
     private MensajeChatResponse toMessageResponse(MensajeChat msg) {
-        UsuarioBasicoDTO remitente = obtenerUsuarioSeguro(msg.getRemitenteId());
-
         return new MensajeChatResponse(
                 msg.getId(),
                 msg.getSalaChat().getId(),
                 msg.getRemitenteId(),
-                remitente.nombreCompleto(),
-                remitente.username(),
+                null,
+                null,
                 msg.getContenido(),
                 msg.getTipoMensaje(),
                 msg.getMediaUrl(),
@@ -239,9 +317,18 @@ public class SalaChatService {
         );
     }
 
-    private UsuarioBasicoDTO obtenerUsuarioSeguro(Long id) {
+    private UsuarioBasicoDTO obtenerUsuarioSeguro(
+            Long id,
+            Map<Long, UsuarioBasicoDTO> usuariosCache
+    ) {
+        if (usuariosCache != null && usuariosCache.containsKey(id)) {
+            return usuariosCache.get(id);
+        }
+
+        UsuarioBasicoDTO usuario;
+
         try {
-            return usuarioFeignClient.obtenerUsuarioBasico(id);
+            usuario = usuarioFeignClient.obtenerUsuarioBasico(id);
         } catch (Exception e) {
             log.warn(
                     "No se pudo obtener usuario {} desde msvc-usuario. Se usará fallback. Motivo: {}",
@@ -249,13 +336,20 @@ public class SalaChatService {
                     e.getMessage()
             );
 
-            return new UsuarioBasicoDTO(
+            usuario = new UsuarioBasicoDTO(
                     id,
                     "usuario" + id,
                     "Usuario",
                     String.valueOf(id),
+                    null,
                     null
             );
         }
+
+        if (usuariosCache != null) {
+            usuariosCache.put(id, usuario);
+        }
+
+        return usuario;
     }
 }

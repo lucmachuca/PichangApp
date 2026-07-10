@@ -60,13 +60,20 @@ public class UserController {
     @GetMapping("/internal/{id}")
     public ResponseEntity<UsuarioBasicoDTO> findBasicById(@PathVariable Long id) {
         return userService.findById(id)
-                .map(user -> ResponseEntity.ok(new UsuarioBasicoDTO(
-                        user.getId(),
-                        user.getUsername(),
-                        user.getNombre(),
-                        user.getApellido(),
-                        user.getEmail()
-                )))
+                .map(user -> {
+                    String fotoUrl = user.getProfile() != null
+                            ? user.getProfile().getFotoUrl()
+                            : null;
+
+                    return ResponseEntity.ok(new UsuarioBasicoDTO(
+                            user.getId(),
+                            user.getUsername(),
+                            user.getNombre(),
+                            user.getApellido(),
+                            user.getEmail(),
+                            fotoUrl
+                    ));
+                })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
@@ -181,15 +188,16 @@ public class UserController {
         final String sexoFiltroFinal = normalizarSexoFiltro(sexo);
         final LocalDateTime fechaMinimaUbicacion = LocalDateTime.now().minusDays(diasUbicacion);
 
-        List<UserResponseDTO> users = userService.findAll()
+        List<UserResponseDTO> users = userService.findDiscoverCandidates(
+                        excludeId,
+                        miDeporte,
+                        edadMinimaFinal,
+                        edadMaximaFinal,
+                        sexoFiltroFinal,
+                        fechaMinimaUbicacion
+                )
                 .stream()
-                .filter(User::isEnabled)
-                .filter(user -> user.getId() != null && !user.getId().equals(excludeId))
                 .filter(user -> user.getProfile() != null)
-                .filter(user -> normalizarTexto(user.getProfile().getDeportePrincipal()) != null)
-                .filter(user -> miDeporte.equals(
-                        normalizarTexto(user.getProfile().getDeportePrincipal())
-                ))
                 .filter(user -> coordenadasValidas(
                         user.getProfile().getLatitud(),
                         user.getProfile().getLongitud()
@@ -198,22 +206,6 @@ public class UserController {
                         user.getProfile().getUltimaUbicacionAt(),
                         fechaMinimaUbicacion
                 ))
-                .filter(user -> {
-                    Integer edadUsuario = user.getProfile().getEdad();
-
-                    return edadUsuario != null
-                            && edadUsuario >= edadMinimaFinal
-                            && edadUsuario <= edadMaximaFinal;
-                })
-                .filter(user -> {
-                    if (sexoFiltroFinal == null) {
-                        return true;
-                    }
-
-                    String sexoUsuario = normalizarTexto(user.getProfile().getSexo());
-
-                    return sexoFiltroFinal.equals(sexoUsuario);
-                })
                 .filter(user -> {
                     double distancia = calcularDistanciaKm(
                             miLat,
@@ -225,6 +217,7 @@ public class UserController {
                     return distancia >= distanciaMinimaFinal
                             && distancia <= distanciaMaximaFinal;
                 })
+                .limit(80)
                 .map(userModelAssembler::toDto)
                 .toList();
 

@@ -5,7 +5,8 @@ public record UsuarioBasicoDTO(
         String username,
         String nombre,
         String apellido,
-        String email
+        String email,
+        String fotoUrl
 ) {
     public String nombreCompleto() {
         String nombreSeguro = nombre != null ? nombre : "";

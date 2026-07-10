@@ -13,7 +13,11 @@ public record SalaChatResponse(
         String usuarioBNombre,
         String usuarioAUsername,
         String usuarioBUsername,
+        String usuarioAFotoUrl,
+        String usuarioBFotoUrl,
         EstadoSala estado,
-        LocalDateTime fechaCreacion
+        LocalDateTime fechaCreacion,
+        MensajeChatResponse ultimoMensaje,
+        Boolean bloqueada
 ) {
 }

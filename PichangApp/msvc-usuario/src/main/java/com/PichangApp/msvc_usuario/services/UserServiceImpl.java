@@ -191,6 +191,26 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<User> findDiscoverCandidates(
+            Long excludeId,
+            String deporte,
+            Integer edadMin,
+            Integer edadMax,
+            String sexoFiltro,
+            LocalDateTime fechaMinimaUbicacion
+    ) {
+        return userRepository.findDiscoverCandidates(
+                excludeId,
+                deporte,
+                edadMin,
+                edadMax,
+                sexoFiltro,
+                fechaMinimaUbicacion
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }
