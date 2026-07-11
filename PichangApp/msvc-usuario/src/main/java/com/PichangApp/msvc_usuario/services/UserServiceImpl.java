@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.time.LocalDateTime;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -59,6 +61,10 @@ public class UserServiceImpl implements UserService {
 
         // 3. Validar y asociar el Perfil Dinámico
         if (user.getProfile() != null) {
+            if (user.getProfile().getLatitud() != null && user.getProfile().getLongitud() != null) {
+                user.getProfile().setUltimaUbicacionAt(LocalDateTime.now());
+            }
+
             validateProfile(user.getProfile());
             user.getProfile().setUser(user);
         }
@@ -87,11 +93,32 @@ public class UserServiceImpl implements UserService {
         if (dto.getEdad() != null) {
             profile.setEdad(dto.getEdad());
         }
+        if (dto.getSexo() != null) {
+            profile.setSexo(dto.getSexo());
+        }
+        if (dto.getFotoUrl() != null) {
+            profile.setFotoUrl(dto.getFotoUrl());
+        }
         if (dto.getDeportePrincipal() != null) {
             profile.setDeportePrincipal(dto.getDeportePrincipal());
         }
         if (dto.getAtributosDeportivos() != null) {
             profile.setAtributosDeportivos(dto.getAtributosDeportivos());
+        }
+        boolean actualizoUbicacion = false;
+
+        if (dto.getLatitud() != null) {
+            profile.setLatitud(dto.getLatitud());
+            actualizoUbicacion = true;
+        }
+
+        if (dto.getLongitud() != null) {
+            profile.setLongitud(dto.getLongitud());
+            actualizoUbicacion = true;
+        }
+
+        if (actualizoUbicacion && profile.getLatitud() != null && profile.getLongitud() != null) {
+            profile.setUltimaUbicacionAt(LocalDateTime.now());
         }
 
         // 4. Validar el perfil actualizado
@@ -109,8 +136,47 @@ public class UserServiceImpl implements UserService {
         return savedProfile;
     }
 
+    @Override
+    @Transactional
+    public void cambiarPassword(
+            Long userId,
+            String passwordActual,
+            String nuevaPassword,
+            String confirmarNuevaPassword
+    ) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + userId));
+
+        String actual = passwordActual == null ? "" : passwordActual.trim();
+        String nueva = nuevaPassword == null ? "" : nuevaPassword.trim();
+        String confirmacion = confirmarNuevaPassword == null ? "" : confirmarNuevaPassword.trim();
+
+        if (actual.isBlank()) {
+            throw new IllegalArgumentException("La contraseña actual es obligatoria.");
+        }
+
+        if (nueva.isBlank()) {
+            throw new IllegalArgumentException("La nueva contraseña es obligatoria.");
+        }
+
+        if (nueva.length() < 6) {
+            throw new IllegalArgumentException("La nueva contraseña debe tener al menos 6 caracteres.");
+        }
+
+        if (!nueva.equals(confirmacion)) {
+            throw new IllegalArgumentException("La nueva contraseña y su confirmación no coinciden.");
+        }
+
+        if (!passwordEncoder.matches(actual, user.getPassword())) {
+            throw new IllegalArgumentException("La contraseña actual no es correcta.");
+        }
+
+        user.setPassword(passwordEncoder.encode(nueva));
+        userRepository.save(user);
+    }
+
     private void validateProfile(UserProfile profile) {
-        if (profile.getDeportePrincipal() == null) {
+        if (profile.getDeportePrincipal() == null || profile.getDeportePrincipal().isBlank()) {
             throw new IllegalArgumentException("El deporte principal es obligatorio");
         }
 
@@ -119,18 +185,40 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Los atributos deportivos no pueden ser nulos");
         }
 
-        switch (profile.getDeportePrincipal().toUpperCase()) {
-            case "BASKET" -> {
-                if (!atributos.containsKey("altura") || !atributos.containsKey("posicion")) {
-                    throw new IllegalArgumentException("Para Basket, la altura y posición son obligatorias.");
-                }
+        String deporte = profile.getDeportePrincipal().trim().toUpperCase();
+
+        Set<String> deportesSoportados = Set.of(
+                "BASKET",
+                "BOXEO",
+                "FUTBOL",
+                "FUTSAL",
+                "TENIS",
+                "PADEL",
+                "VOLEIBOL",
+                "RUNNING",
+                "CICLISMO",
+                "CALISTENIA",
+                "TREKKING",
+                "NATACION"
+        );
+
+        if (!deportesSoportados.contains(deporte)) {
+            throw new IllegalArgumentException("Deporte no soportado: " + profile.getDeportePrincipal());
+        }
+
+        profile.setDeportePrincipal(deporte);
+
+        if ("BOXEO".equals(deporte)) {
+            if (!atributos.containsKey("peso") || !atributos.containsKey("guardia")) {
+                throw new IllegalArgumentException("Para Boxeo, el peso y la guardia son obligatorios.");
             }
-            case "BOXEO" -> {
-                if (!atributos.containsKey("peso") || !atributos.containsKey("guardia")) {
-                    throw new IllegalArgumentException("Para Boxeo, el peso y la guardia son obligatorios.");
-                }
-            }
-            default -> throw new IllegalArgumentException("Deporte no soportado: " + profile.getDeportePrincipal());
+            return;
+        }
+
+        if (!atributos.containsKey("altura") || !atributos.containsKey("posicion")) {
+            throw new IllegalArgumentException(
+                    "Para " + deporte + ", la altura y la posición/especialidad son obligatorias."
+            );
         }
     }
 
@@ -138,6 +226,26 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public List<User> findAll() {
         return userRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> findDiscoverCandidates(
+            Long excludeId,
+            String deporte,
+            Integer edadMin,
+            Integer edadMax,
+            String sexoFiltro,
+            LocalDateTime fechaMinimaUbicacion
+    ) {
+        return userRepository.findDiscoverCandidates(
+                excludeId,
+                deporte,
+                edadMin,
+                edadMax,
+                sexoFiltro,
+                fechaMinimaUbicacion
+        );
     }
 
     @Override

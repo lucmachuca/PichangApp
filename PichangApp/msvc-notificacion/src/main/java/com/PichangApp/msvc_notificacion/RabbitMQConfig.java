@@ -23,6 +23,12 @@ public class RabbitMQConfig {
     public static final String ROUTING_KEY_MENSAJE_CREADO = "comunicacion.mensaje.creado";
     public static final String QUEUE_NOTIFICACIONES_MENSAJE = "notificaciones.mensaje.queue";
 
+    public static final String ROUTING_KEY_SQUAD_SOLICITUD_CREADA = "comunicacion.squad.solicitud.creada";
+    public static final String QUEUE_NOTIFICACIONES_SQUAD_SOLICITUD_CREADA = "notificaciones.squad.solicitud.creada.queue";
+
+    public static final String ROUTING_KEY_SQUAD_SOLICITUD_ACEPTADA = "comunicacion.squad.solicitud.aceptada";
+    public static final String QUEUE_NOTIFICACIONES_SQUAD_SOLICITUD_ACEPTADA = "notificaciones.squad.solicitud.aceptada.queue";
+
     @Bean
     public TopicExchange matchExchange() {
         return new TopicExchange(EXCHANGE_MATCH);
@@ -63,6 +69,39 @@ public class RabbitMQConfig {
                 .bind(notificacionesMensajeQueue)
                 .to(comunicacionExchange)
                 .with(ROUTING_KEY_MENSAJE_CREADO);
+    }
+
+
+    @Bean
+    public Queue notificacionesSquadSolicitudCreadaQueue() {
+        return new Queue(QUEUE_NOTIFICACIONES_SQUAD_SOLICITUD_CREADA, true);
+    }
+
+    @Bean
+    public Binding notificacionesSquadSolicitudCreadaBinding(
+            @Qualifier("notificacionesSquadSolicitudCreadaQueue") Queue notificacionesSquadSolicitudCreadaQueue,
+            @Qualifier("comunicacionExchange") TopicExchange comunicacionExchange
+    ) {
+        return BindingBuilder
+                .bind(notificacionesSquadSolicitudCreadaQueue)
+                .to(comunicacionExchange)
+                .with(ROUTING_KEY_SQUAD_SOLICITUD_CREADA);
+    }
+
+    @Bean
+    public Queue notificacionesSquadSolicitudAceptadaQueue() {
+        return new Queue(QUEUE_NOTIFICACIONES_SQUAD_SOLICITUD_ACEPTADA, true);
+    }
+
+    @Bean
+    public Binding notificacionesSquadSolicitudAceptadaBinding(
+            @Qualifier("notificacionesSquadSolicitudAceptadaQueue") Queue notificacionesSquadSolicitudAceptadaQueue,
+            @Qualifier("comunicacionExchange") TopicExchange comunicacionExchange
+    ) {
+        return BindingBuilder
+                .bind(notificacionesSquadSolicitudAceptadaQueue)
+                .to(comunicacionExchange)
+                .with(ROUTING_KEY_SQUAD_SOLICITUD_ACEPTADA);
     }
 
     @Bean

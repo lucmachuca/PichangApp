@@ -57,7 +57,9 @@ class UserServiceImplUnitTest {
                 Map.of(
                         "altura", 180,
                         "posicion", "Base"
-                )
+                ),
+                -33.0472,
+                -71.6127
         );
 
         when(userRepository.findById(1L))
@@ -73,6 +75,8 @@ class UserServiceImplUnitTest {
         assertEquals("BASKET", resultado.getDeportePrincipal());
         assertEquals(180, resultado.getAtributosDeportivos().get("altura"));
         assertEquals("Base", resultado.getAtributosDeportivos().get("posicion"));
+        assertEquals(-33.0472, resultado.getLatitud());
+        assertEquals(-71.6127, resultado.getLongitud());
         assertEquals(user, resultado.getUser());
 
         verify(userRepository).findById(1L);
@@ -93,7 +97,9 @@ class UserServiceImplUnitTest {
                 Map.of(
                         "peso", 75,
                         "guardia", "Ortodoxa"
-                )
+                ),
+                -33.0245,
+                -71.5518
         );
 
         when(userRepository.findById(2L))
@@ -109,6 +115,8 @@ class UserServiceImplUnitTest {
         assertEquals("BOXEO", resultado.getDeportePrincipal());
         assertEquals(75, resultado.getAtributosDeportivos().get("peso"));
         assertEquals("Ortodoxa", resultado.getAtributosDeportivos().get("guardia"));
+        assertEquals(-33.0245, resultado.getLatitud());
+        assertEquals(-71.5518, resultado.getLongitud());
         assertEquals(user, resultado.getUser());
 
         verify(userRepository).findById(2L);
@@ -125,7 +133,9 @@ class UserServiceImplUnitTest {
                 Map.of(
                         "altura", 180,
                         "posicion", "Base"
-                )
+                ),
+                -33.0472,
+                -71.6127
         );
 
         when(userRepository.findById(999L))
@@ -157,7 +167,9 @@ class UserServiceImplUnitTest {
                 "FUTBOL",
                 Map.of(
                         "posicion", "Delantero"
-                )
+                ),
+                -33.0472,
+                -71.6127
         );
 
         when(userRepository.findById(1L))
@@ -183,21 +195,24 @@ class UserServiceImplUnitTest {
         profile.setUser(user);
         user.setProfile(profile);
 
-        // Falta el atributo "altura" requerido para BASKET
         UpdateUserProfileDTO dto = new UpdateUserProfileDTO(
                 "Jugador base incompleto",
                 22,
                 "BASKET",
                 Map.of(
                         "posicion", "Base"
-                )
+                ),
+                -33.0472,
+                -71.6127
         );
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            userService.updateUserProfile(1L, dto);
-        });
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.updateUserProfile(1L, dto)
+        );
 
         verify(userRepository).findById(1L);
         verify(userProfileRepository, never()).save(any(UserProfile.class));
@@ -229,5 +244,4 @@ class UserServiceImplUnitTest {
         verify(passwordEncoder).encode("password123");
         verify(userRepository).save(any(User.class));
     }
-
 }

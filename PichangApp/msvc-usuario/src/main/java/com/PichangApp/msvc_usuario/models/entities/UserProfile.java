@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,9 +27,17 @@ public class UserProfile {
 
     private Integer edad;
 
+    private String sexo;
+
     private String fotoUrl;
 
     private String deportePrincipal;
+
+    private Double latitud;
+
+    private Double longitud;
+
+    private LocalDateTime ultimaUbicacionAt;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
@@ -47,21 +56,25 @@ public class UserProfile {
             atributosDeportivos = new HashMap<>();
         }
 
+        if (latitud != null && longitud != null && ultimaUbicacionAt == null) {
+            ultimaUbicacionAt = LocalDateTime.now();
+        }
+
         if (deportePrincipal == null || deportePrincipal.isBlank()) {
             return;
         }
 
-        String deporte = deportePrincipal.toUpperCase();
-
-        if ("BASKET".equals(deporte)) {
-            validarCampoObligatorio("altura");
-            validarCampoObligatorio("posicion");
-        }
+        String deporte = deportePrincipal.trim().toUpperCase();
+        deportePrincipal = deporte;
 
         if ("BOXEO".equals(deporte)) {
             validarCampoObligatorio("peso");
             validarCampoObligatorio("guardia");
+            return;
         }
+
+        validarCampoObligatorio("altura");
+        validarCampoObligatorio("posicion");
     }
 
     private void validarCampoObligatorio(String campo) {

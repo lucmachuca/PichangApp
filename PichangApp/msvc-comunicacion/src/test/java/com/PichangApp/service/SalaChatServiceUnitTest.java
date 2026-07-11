@@ -266,13 +266,13 @@ class SalaChatServiceUnitTest {
         when(salaChatRepository.findById(7L)).thenReturn(Optional.of(sala));
         when(matchFeignClient.obtenerMatchPorId(8L)).thenReturn(match);
 
-        // Simulamos que el receptor bloqueó al remitente
         when(bloqueoUsuarioRepository.existsByIdUsuarioOrigenAndIdUsuarioBloqueado(11L, 12L)).thenReturn(false);
         when(bloqueoUsuarioRepository.existsByIdUsuarioOrigenAndIdUsuarioBloqueado(12L, 11L)).thenReturn(true);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            salaChatService.enviarMensaje(7L, request);
-        });
+        assertThrows(
+                IllegalStateException.class,
+                () -> salaChatService.enviarMensaje(7L, request)
+        );
 
         verify(mensajeChatRepository, never()).save(any(MensajeChat.class));
         verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
@@ -330,7 +330,8 @@ class SalaChatServiceUnitTest {
                 "ep3_user_a",
                 "Usuario",
                 "PruebaA",
-                "ep3_user_a@pichangapp.cl"
+                "ep3_user_a@pichangapp.cl",
+                null
         );
     }
 
@@ -340,7 +341,8 @@ class SalaChatServiceUnitTest {
                 "ep3_user_b",
                 "Usuario",
                 "PruebaB",
-                "ep3_user_b@pichangapp.cl"
+                "ep3_user_b@pichangapp.cl",
+                null
         );
     }
 }
